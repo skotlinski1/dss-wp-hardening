@@ -1,0 +1,10 @@
+# Archiwum, z którego Composer instaluje paczkę, nie zawiera plików roboczych i dokumentacji.
+# Zostają: dss-wp-security.php, composer.json i LICENSE.
+.gitattributes export-ignore
+.github        export-ignore
+.gitignore     export-ignore
+CHANGELOG.md   export-ignore
+CLAUDE.md      export-ignore
+COMPOSER.md    export-ignore
+README.md      export-ignore
+docs           export-ignore
