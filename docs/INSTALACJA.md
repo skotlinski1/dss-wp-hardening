@@ -27,3 +27,22 @@ define('DSS_WP_SECURITY_DISABLED', true);
 
 Wtyczka niczego wtedy nie rejestruje i niczego nie zmienia w bazie, więc strona wraca do zachowania rdzenia.
 Usunięcie linii przywraca działanie. Ta sama stała służy do porównań z wtyczką i bez niej.
+
+## Sprawdzenie po wdrożeniu
+
+Po wdrożeniu i po każdej większej aktualizacji WordPressa, w oknie prywatnym przeglądarki (bez logowania):
+
+1. `/?author=1` i `/wp-json/wp/v2/users` odpowiadają 404, a `/wp-sitemap.xml` nie zawiera
+   `wp-sitemap-users-1.xml`.
+2. `/xmlrpc.php` odpowiada 403 („XML-RPC jest wyłączone.”).
+3. W źródle strony głównej nie ma `name="generator"`.
+4. Logowanie z nieistniejącym loginem i z istniejącym loginem i złym hasłem pokazuje ten sam komunikat.
+5. Po zalogowaniu panel działa, a lista użytkowników się otwiera.
+
+Filtry są na miejscu (brak błędów PHP niczego nie potwierdza):
+
+```bash
+wp eval 'var_dump(has_filter("request", "DSS\Security\block_author_query"), has_filter("the_generator", "__return_empty_string"));'
+```
+
+Obie wartości mają być `10`.
