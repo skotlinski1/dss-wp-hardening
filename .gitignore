@@ -1,0 +1,6 @@
+# Sekrety i artefakty Composera: nie mają trafiać do repo.
+/auth.json
+/vendor/
+/composer.lock
+.env
+.env.*

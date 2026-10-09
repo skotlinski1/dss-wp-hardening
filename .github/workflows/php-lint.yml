@@ -1,0 +1,40 @@
+name: PHP Lint
+
+on:
+    push:
+        branches: [ main ]
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+
+    lint:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                php-ver: [ '8.3', '8.5' ]
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v5
+                with:
+                    persist-credentials: false
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ matrix.php-ver }}
+                    coverage: none
+
+            -   name: Check syntax of the plugin
+                run: php -l dss-wp-security.php
+
+            -   name: Validate composer.json
+                run: composer validate --strict --no-check-lock
