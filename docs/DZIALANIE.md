@@ -63,7 +63,11 @@ Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odś
 
 | Temat | Gdzie |
 |---|---|
-| nagłówki bezpieczeństwa HTTP (CSP, HSTS, `X-Frame-Options`) | konfiguracja serwera (LiteSpeed) |
-| limity prób logowania, firewall | serwer albo usługa przed serwerem |
+| nagłówki bezpieczeństwa HTTP, blokada plików i PHP w katalogu uploadu | `.htaccess` na serwerze |
+| HTTPS, HSTS, reguły WAF, limit prób logowania | Cloudflare |
+| wirtualne łatki na luki we wtyczkach | Patchstack |
 | zbędne zasoby i linki w `<head>` (emoji, RSD, RSS) | `dss-wp-cleanup` |
 | dane SEO | `dss-wp-seo` |
+
+Ustawienia serwera, Cloudflare i Patchstacka dla strony opisuje repo `dss-wp-site`: `docs/BEZPIECZENSTWO.md` i
+`docs/CLOUDFLARE.md`.

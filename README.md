@@ -4,8 +4,9 @@ Własny MU-plugin dla WordPressa (`dss-wp-hardening.php`, paczka Composera `dss/
 informacje i zamyka wejścia, które pomagają atakującemu. To narzędzie na własne potrzeby, bez gwarancji
 zgodności z innymi konfiguracjami.
 
-Zbędne zasoby i linki w `<head>` (emoji, RSD, RSS) usuwa `dss-wp-cleanup`. Nagłówki bezpieczeństwa HTTP i
-limity prób logowania ustawia serwer.
+Zbędne zasoby i linki w `<head>` (emoji, RSD, RSS) usuwa `dss-wp-cleanup`. Nagłówki bezpieczeństwa HTTP,
+limity prób logowania i reguły WAF ustawiają serwer i Cloudflare (opis dla strony: `docs/BEZPIECZENSTWO.md` i
+`docs/CLOUDFLARE.md` w repo `dss-wp-site`).
 
 **Dokumentacja:** [docs/](docs/README.md). Instalacja przez Composera w projekcie DSS WP Manage:
 [COMPOSER.md](COMPOSER.md).
