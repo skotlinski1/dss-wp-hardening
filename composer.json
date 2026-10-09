@@ -1,9 +1,9 @@
 {
-	"name": "dss/wp-security",
+	"name": "dss/wp-hardening",
 	"description": "MU-plugin utwardzający WordPressa: wyliczanie autorów, wersja WordPressa, XML-RPC.",
 	"type": "wordpress-muplugin",
 	"license": "GPL-2.0-or-later",
-	"homepage": "https://github.com/skotlinski1/dss-wp-security",
+	"homepage": "https://github.com/skotlinski1/dss-wp-hardening",
 	"keywords": ["wordpress", "mu-plugin", "security", "hardening", "user-enumeration"],
 	"authors": [
 		{
@@ -12,8 +12,8 @@
 		}
 	],
 	"support": {
-		"issues": "https://github.com/skotlinski1/dss-wp-security/issues",
-		"source": "https://github.com/skotlinski1/dss-wp-security"
+		"issues": "https://github.com/skotlinski1/dss-wp-hardening/issues",
+		"source": "https://github.com/skotlinski1/dss-wp-hardening"
 	},
 	"require": {
 		"php": ">=8.3",

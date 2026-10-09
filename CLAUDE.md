@@ -1,6 +1,6 @@
 # Zasady pracy w tym repo
 
-Pojedynczy MU-plugin `dss-wp-security.php` (paczka `dss/wp-security`): ukrywa informacje i zamyka wejścia,
+Pojedynczy MU-plugin `dss-wp-hardening.php` (paczka `dss/wp-hardening`): ukrywa informacje i zamyka wejścia,
 które pomagają atakującemu. Plan zakresu i to, co należy do innych repo, są w `docs/DZIALANIE.md` i w sekcji 5
 `.github/CONTRIBUTING.md`.
 
@@ -29,7 +29,7 @@ Sposób na testowy WordPress z MariaDB i WP-CLI jest w `CLAUDE.md` repo `skotlin
 
 - Klasyczny motyw bez `theme.json`, np. Twenty Twenty (`wp theme activate twentytwenty`).
 - Wtyczkę podłącz plikiem w `wp-content/mu-plugins/` z `require_once` pliku z repo, a porównanie bez niej rób
-  przez `define('DSS_WP_SECURITY_DISABLED', true)` (w `wp eval` przez `--exec`).
+  przez `define('DSS_WP_HARDENING_DISABLED', true)` (w `wp eval` przez `--exec`).
 - Po próbie przywróć motyw i usuń plik z `mu-plugins/`.
 
 ## Nie rób bez pytania

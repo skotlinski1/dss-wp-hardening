@@ -1,6 +1,6 @@
-# DSS — Security
+# DSS — Hardening
 
-Własny MU-plugin dla WordPressa (`dss-wp-security.php`, paczka Composera `dss/wp-security`), który ukrywa
+Własny MU-plugin dla WordPressa (`dss-wp-hardening.php`, paczka Composera `dss/wp-hardening`), który ukrywa
 informacje i zamyka wejścia, które pomagają atakującemu. To narzędzie na własne potrzeby, bez gwarancji
 zgodności z innymi konfiguracjami.
 
@@ -28,12 +28,12 @@ Najnowszy stabilny WordPress (7.0+), PHP 8.3+. Szczegóły: [docs/INSTALACJA.md]
 
 ## Instalacja
 
-Skopiuj `dss-wp-security.php` do `wp-content/mu-plugins/` (MU-plugin nie wymaga aktywacji) albo zainstaluj
+Skopiuj `dss-wp-hardening.php` do `wp-content/mu-plugins/` (MU-plugin nie wymaga aktywacji) albo zainstaluj
 Composerem w projekcie DSS WP Manage ([COMPOSER.md](COMPOSER.md)). Wyłącznik awaryjny w `wp-config.php` przed
 `wp-settings.php`:
 
 ```php
-define('DSS_WP_SECURITY_DISABLED', true);
+define('DSS_WP_HARDENING_DISABLED', true);
 ```
 
 ## Licencja
