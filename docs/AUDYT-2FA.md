@@ -181,7 +181,113 @@ dopiero po dodaniu kluczy.
    działającej metody 2FA nie zaloguje się do panelu. Two Factor 0.17.0 odrzuca wtedy logowanie, więc to może
    **odciąć panel** — dlatego opcja nieaktywna, włączana po dodaniu kluczy każdemu administratorowi.
 
-Klienci sklepu (rola `customer`) zostają poza tym: filtry działają tylko dla ról z dostępem do panelu.
+Przykład obejmuje administratorów (uprawnienie `manage_options`); klienci sklepu i inne role zostają bez
+zmian. Zmień uprawnienie w `limit_admin_two_factor_providers()` (i w zakomentowanym
+`require_two_factor_for_admins()`), jeśli ograniczenie ma dotyczyć też innych ról z dostępem do panelu (np.
+redaktorów).
+
+Przykładowy kod — **nie jest w `dss-wp-hardening.php`**, pokazany w konwencji repo. Funkcję
+`configure_two_factor()` dołączyłoby się do `configure()` obok pozostałych `configure_*()`:
+
+```php
+/** Rejestruje haki; każdy temat ma własną funkcję. */
+function configure(): void
+{
+	configure_xmlrpc();
+	configure_authors();
+	configure_login();
+	configure_version();
+	configure_app_passwords();
+	configure_two_factor();
+}
+
+/**
+ * Logowanie dwuetapowe (Two Factor + WebAuthn Provider): osłona akcji dodawania kluczy i ograniczenie metod
+ * dla administratorów. Działa tylko przy aktywnej wtyczce Two Factor; bez niej nic nie rejestruje.
+ */
+function configure_two_factor(): void
+{
+	if (!class_exists('Two_Factor_Core')) {
+		return;
+	}
+
+	// WebAuthn Provider pozwala dodać, usunąć i przemianować klucz bez świeżego potwierdzenia 2FA, którego
+	// Two Factor wymaga przy innych zmianach ustawień. Osłona na priorytecie 0 (przed handlerem wtyczki)
+	// przerywa te cztery akcje w sesji bez świeżego 2FA.
+	$key_actions = ['webauthn_preregister', 'webauthn_register', 'webauthn_delete_key', 'webauthn_rename_key'];
+	foreach ($key_actions as $action) {
+		add_action('wp_ajax_' . $action, __NAMESPACE__ . '\\guard_two_factor_change', 0);
+	}
+
+	// Konta administracyjne: tylko klucz sprzętowy i kody zapasowe (bez e-maila i TOTP), więc przy logowaniu
+	// nie da się wybrać słabszej metody.
+	add_filter('two_factor_providers_for_user', __NAMESPACE__ . '\\limit_admin_two_factor_providers', 10, 2);
+	// Bez cichego przejścia na kody e-mail, gdyby metoda konta zniknęła.
+	add_filter('two_factor_fallback_provider_for_user', __NAMESPACE__ . '\\disable_email_fallback');
+}
+
+/**
+ * Przerywa zmianę kluczy WebAuthn w sesji bez świeżego potwierdzenia 2FA (ta sama reguła, której Two Factor
+ * używa przy zmianie ustawień). Konto bez 2FA ta funkcja przepuszcza, więc pierwszy klucz da się dodać.
+ */
+function guard_two_factor_change(): void
+{
+	if (\Two_Factor_Core::current_user_can_update_two_factor_options('save')) {
+		return;
+	}
+
+	wp_send_json_error('Potwierdź ponownie logowanie dwuetapowe i spróbuj jeszcze raz.', 403);
+}
+
+/**
+ * Zostawia administratorowi wśród metod 2FA tylko klucz sprzętowy i kody zapasowe.
+ *
+ * @param mixed $providers Dostawcy 2FA (obiekty pod kluczem nazwy klasy).
+ * @param mixed $user      Użytkownik, którego dotyczą.
+ * @return mixed
+ */
+function limit_admin_two_factor_providers($providers, $user)
+{
+	if (!is_array($providers) || !$user instanceof \WP_User || !user_can($user, 'manage_options')) {
+		return $providers;
+	}
+
+	$allowed = ['TwoFactor_Provider_WebAuthn', 'Two_Factor_Backup_Codes'];
+
+	return array_intersect_key($providers, array_flip($allowed));
+}
+
+/**
+ * Wyłącza kody e-mail jako metodę zapasową: pusta wartość oznacza brak metody, więc Two Factor odmawia
+ * logowania zamiast wpuścić na jeden składnik.
+ *
+ * @param mixed $provider Klucz metody zapasowej (pominięty).
+ * @return string
+ */
+function disable_email_fallback($provider): string
+{
+	return '';
+}
+
+/* Wymuszenie 2FA dla kont administracyjnych: bez działającej metody 2FA konto nie zaloguje się do panelu
+ * (Two Factor odrzuca wtedy logowanie). Dopisz też wywołanie filtra w configure_two_factor().
+ * Włącz, jeśli: każdy administrator ma już skonfigurowany klucz sprzętowy (inaczej odetniesz sobie dostęp). */
+// add_filter('two_factor_is_required_for_user', __NAMESPACE__ . '\\require_two_factor_for_admins', 10, 2);
+//
+// function require_two_factor_for_admins($required, $user)
+// {
+// 	if ($user instanceof \WP_User && user_can($user, 'manage_options')) {
+// 		return true;
+// 	}
+//
+// 	return $required;
+// }
+```
+
+Klucze dostawców to nazwy klas: `TwoFactor_Provider_WebAuthn` (WebAuthn Provider), `Two_Factor_Backup_Codes`,
+`Two_Factor_Email`, `Two_Factor_Totp` (Two Factor). Osłonę z `guard_two_factor_change()` sprawdzono próbą
+kandydata w tej sesji (wyżej); pozostałych funkcji nie uruchomiono jako kodu wtyczki — ograniczenie metod
+sprawdzono równoważnym ustawieniem Two Factor.
 
 ### Praktyka z kluczami
 
