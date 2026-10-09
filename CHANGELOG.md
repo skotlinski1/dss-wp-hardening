@@ -2,8 +2,21 @@
 
 Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie
 [SemVer](https://semver.org/lang/pl/). Najnowsze wpisy na górze. Tagi bez przedrostka `v`, numer taki sam jak
-`Version:` w `dss-wp-security.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
+`Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
+
+## 0.3.0 — 2026-10-09
+
+- Nowa nazwa: repo `dss-wp-hardening`, paczka `dss/wp-hardening`, plik `dss-wp-hardening.php`, przestrzeń nazw
+  `DSS\Hardening`, wyłącznik `DSS_WP_HARDENING_DISABLED`, nazwa wtyczki `DSS — Hardening`. Działanie bez zmian.
+  „Hardening” lepiej opisuje zakres: wtyczka zmniejsza powierzchnię ataku, a nie jest pełną wtyczką
+  bezpieczeństwa (firewall, limity logowań i nagłówki HTTP zostają po stronie serwera).
+
+### Aktualizacja
+
+- W `composer.json` strony: repozytorium `https://github.com/skotlinski1/dss-wp-hardening.git` i
+  `"dss/wp-hardening": "^0.3"` zamiast `dss/wp-security`; token GitHub obejmuje repo pod nową nazwą.
+- Stała `DSS_WP_SECURITY_DISABLED` nie działa; wyłącznik to `DSS_WP_HARDENING_DISABLED`.
 
 ## 0.2.0 — 2026-10-09
 

@@ -1,4 +1,4 @@
-# Dokumentacja DSS — Security
+# Dokumentacja DSS — Hardening
 
 Krótki opis wtyczki jest w [README](../README.md) w katalogu głównym. Tu są szczegóły.
 

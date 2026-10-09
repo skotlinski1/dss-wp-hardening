@@ -7,13 +7,13 @@
 
 ## Instalacja ręczna
 
-Skopiuj `dss-wp-security.php` do `wp-content/mu-plugins/`. MU-plugin nie wymaga aktywacji. W katalogu
+Skopiuj `dss-wp-hardening.php` do `wp-content/mu-plugins/`. MU-plugin nie wymaga aktywacji. W katalogu
 MU-pluginów może być tylko jedna kopia pliku: druga zadeklarowałaby te same funkcje w przestrzeni nazw
-`DSS\Security` i zakończyła każde żądanie błędem krytycznym.
+`DSS\Hardening` i zakończyła każde żądanie błędem krytycznym.
 
 ## Instalacja przez Composera
 
-W projekcie DSS WP Manage paczka `dss/wp-security` (typ `wordpress-muplugin`, wersja z tagu Git bez `v`) jest
+W projekcie DSS WP Manage paczka `dss/wp-hardening` (typ `wordpress-muplugin`, wersja z tagu Git bez `v`) jest
 instalowana do katalogu MU-pluginów i ładowana przez loader DSS. Instrukcja krok po kroku:
 [COMPOSER.md](../COMPOSER.md).
 
@@ -22,7 +22,7 @@ instalowana do katalogu MU-pluginów i ładowana przez loader DSS. Instrukcja kr
 W `wp-config.php` przed `wp-settings.php`:
 
 ```php
-define('DSS_WP_SECURITY_DISABLED', true);
+define('DSS_WP_HARDENING_DISABLED', true);
 ```
 
 Wtyczka niczego wtedy nie rejestruje i niczego nie zmienia w bazie, więc strona wraca do zachowania rdzenia.
@@ -42,7 +42,7 @@ Po wdrożeniu i po każdej większej aktualizacji WordPressa, w oknie prywatnym 
 Filtry są na miejscu (brak błędów PHP niczego nie potwierdza):
 
 ```bash
-wp eval 'var_dump(has_filter("request", "DSS\Security\block_author_query"), has_filter("the_generator", "__return_empty_string"));'
+wp eval 'var_dump(has_filter("request", "DSS\Hardening\block_author_query"), has_filter("the_generator", "__return_empty_string"));'
 ```
 
 Obie wartości mają być `10`.

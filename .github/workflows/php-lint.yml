@@ -34,7 +34,7 @@ jobs:
                     coverage: none
 
             -   name: Check syntax of the plugin
-                run: php -l dss-wp-security.php
+                run: php -l dss-wp-hardening.php
 
             -   name: Validate composer.json
                 run: composer validate --strict --no-check-lock

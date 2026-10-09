@@ -1,5 +1,5 @@
 # Archiwum, z którego Composer instaluje paczkę, nie zawiera plików roboczych i dokumentacji.
-# Zostają: dss-wp-security.php, composer.json i LICENSE.
+# Zostają: dss-wp-hardening.php, composer.json i LICENSE.
 .gitattributes export-ignore
 .github        export-ignore
 .gitignore     export-ignore

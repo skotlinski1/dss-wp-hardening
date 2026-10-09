@@ -1,10 +1,10 @@
-# Zasady pracy nad DSS — Security
+# Zasady pracy nad DSS — Hardening
 
 Ten plik jest dla opiekuna i Claude'a. Claude przygotowuje zmianę i PR. Opiekun klika merge i zakłada tag.
 
 Każda zmiana paczki wchodzi do `main` jako **osobna wersja `X.Y.Z`** z własnym tagiem i wpisem w
-`CHANGELOG.md`. Paczka to to, co instaluje Composer: `dss-wp-security.php`, `composer.json` i `LICENSE`
-(reszta ma `export-ignore` w `.gitattributes`). Numer wersji to `Version:` w nagłówku `dss-wp-security.php`.
+`CHANGELOG.md`. Paczka to to, co instaluje Composer: `dss-wp-hardening.php`, `composer.json` i `LICENSE`
+(reszta ma `export-ignore` w `.gitattributes`). Numer wersji to `Version:` w nagłówku `dss-wp-hardening.php`.
 
 Zmiana tylko w plikach z `export-ignore` (`README.md`, `COMPOSER.md`, `CHANGELOG.md`, `CLAUDE.md`, `docs/`,
 `.github/`) nie dostaje wersji, tagu ani wpisu. Najbliższe wydanie wspomina ją jednym punktem: listę daje `git
@@ -62,8 +62,8 @@ Claude podaje gotowe polecenia z numerem wersji i commitem. Opiekun wykonuje je 
 Polecenia są połączone `&&`, więc gdy `cd` się nie uda, nic więcej się nie wykona:
 
 ```shell
-cd ~/Projects/dss-wp-security && git switch main && git pull && git show COMMIT_MERGE:dss-wp-security.php | grep "Version:"
-git tag -a X.Y.Z -m "DSS Security X.Y.Z" COMMIT_MERGE && git push origin X.Y.Z && git ls-remote --tags origin | grep -F "refs/tags/X.Y.Z"
+cd ~/Projects/dss-wp-hardening && git switch main && git pull && git show COMMIT_MERGE:dss-wp-hardening.php | grep "Version:"
+git tag -a X.Y.Z -m "DSS Hardening X.Y.Z" COMMIT_MERGE && git push origin X.Y.Z && git ls-remote --tags origin | grep -F "refs/tags/X.Y.Z"
 ```
 
 `COMMIT_MERGE` to commit, którym PR wszedł do `main` (Claude podaje jego pełny numer). Pierwsza linia ma
@@ -77,12 +77,12 @@ naprawia kolejna wersja.
 
 ## 4. Sprawdzenia przed merge'em
 
-- **CI na PR** (GitHub Actions) sprawdza składnię `dss-wp-security.php` na PHP 8.3 i 8.5 oraz `composer
+- **CI na PR** (GitHub Actions) sprawdza składnię `dss-wp-hardening.php` na PHP 8.3 i 8.5 oraz `composer
   validate --strict`. O merge prosisz dopiero przy zielonym CI. Czerwone CI naprawiasz w tym samym PR.
 - **Zmiana haków wymaga próby na prawdziwym WordPressie** z klasycznym motywem: aktywny hak ma być widoczny w
   `has_filter()` / `has_action()` (odpięty: zniknąć), skutek ma być widoczny w odpowiedzi (HTML, nagłówki, kod
   odpowiedzi), a strona (front i panel) odpowiadać bez błędów PHP. Porównuj z wtyczką i bez niej
-  (`DSS_WP_SECURITY_DISABLED`). Wynik idzie do opisu PR i do `docs/`. CI tego nie sprawdza.
+  (`DSS_WP_HARDENING_DISABLED`). Wynik idzie do opisu PR i do `docs/`. CI tego nie sprawdza.
 - Nazwy i priorytety haków rdzenia sprawdzaj w kodzie WordPressa, na którym robisz próbę (`wp-includes/`), a
   nie z pamięci.
 
@@ -95,13 +95,13 @@ Zakres tej wtyczki (SRP): informacje i wejścia, które pomagają atakującemu. 
 | Gutenberg i bloki rdzenia | `dss-no-blocks` |
 | zbędne funkcje i zasoby WooCommerce, także jego bloki | `dss-disable-woo-bloatware` (`dss/lean-woocommerce`) |
 | zbędne albo ciężkie wyjście i zasoby rdzenia (wydajność) | `dss-wp-cleanup` |
-| informacje i wejścia, które pomagają atakującemu | `dss-wp-security` |
+| informacje i wejścia, które pomagają atakującemu | `dss-wp-hardening` |
 | dane dla wyszukiwarek i serwisów społecznościowych | `dss-wp-seo` |
 | obrazy, ich warianty i kopie na CDN | `dss-media-suite` |
 | wygląd (HTML, CSS, szablony) | motyw `dss-wp-theme` |
 
 Pytanie kontrolne przy usuwaniu czegoś z WordPressa: **dlaczego usuwamy?** Bo zbędne albo ciężkie:
-`dss-wp-cleanup`. Bo pomaga atakującemu: `dss-wp-security`. Gdy funkcja pasuje do dwóch miejsc albo do
+`dss-wp-cleanup`. Bo pomaga atakującemu: `dss-wp-hardening`. Gdy funkcja pasuje do dwóch miejsc albo do
 żadnego, Claude przedstawia opiekunowi propozycję przed napisaniem kodu.
 
 ## 6. Kod
@@ -113,13 +113,13 @@ Pytanie kontrolne przy usuwaniu czegoś z WordPressa: **dlaczego usuwamy?** Bo z
   informacją, kiedy je włączyć.
 - Podział w pliku jest tematyczny, nie kontekstowy: haki rejestrują się w `configure()` przez funkcje
   `configure_*()` z jednym tematem każda.
-- Każdy plik PHP: `declare(strict_types=1);`, przestrzeń nazw `DSS\Security` i wyjście, gdy nie ma stałej
+- Każdy plik PHP: `declare(strict_types=1);`, przestrzeń nazw `DSS\Hardening` i wyjście, gdy nie ma stałej
   `ABSPATH`. Wyjście HTML przez `esc_html()`, `esc_attr()`, `esc_url()`, JSON przez `wp_json_encode()`.
 - Wcięcia tabulatorami, linie do ok. 110 znaków. Komentarze: domyślnie zwykłe `//`. `/* ... */` (jedna
   gwiazdka) tylko wtedy, gdy zaraz pod nim jest zakomentowany kod w liniach `//` (opcja nieaktywna: powód i
   „Włącz, jeśli”). Służy wyłącznie do odróżnienia opisu od wyłączonego kodu; nie używaj go do zwykłych opisów.
   Opcje nieaktywne rozdzielaj pustą linią. `/** ... */` tylko dla docblocków funkcji i pliku. W komentarzu
   blokowym nie wpisuj dosłownego `*/`.
-- W katalogu głównym tylko jeden plik z nagłówkiem `Plugin Name:` (`dss-wp-security.php`): DSS WP Manage
+- W katalogu głównym tylko jeden plik z nagłówkiem `Plugin Name:` (`dss-wp-hardening.php`): DSS WP Manage
   odrzuca paczkę z inną ich liczbą.
 - Nigdy nie commituj tokenów, `auth.json` ani sekretów.
