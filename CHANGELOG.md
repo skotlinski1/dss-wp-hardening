@@ -5,6 +5,16 @@ Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), we
 `Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
 
+## 0.6.0 — 2026-10-10
+
+- Kanały RSS 2.0, RDF i Atom podają nazwę strony zamiast nazwy wyświetlanej autora (`<dc:creator>`,
+  `<author><name>`). Zabezpiecza stronę na wypadek, gdy kanały zostaną włączone (`dss-wp-cleanup` wyłącza je
+  domyślnie). Filtr dodaje dopiero żądanie kanału.
+
+### Aktualizacja
+
+- W `composer.json` strony: `"dss/wp-hardening": "^0.6"`.
+
 ## 0.5.0 — 2026-10-10
 
 - Opcjonalny czas sesji kont edytorskich: stałe `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` (logowanie bez

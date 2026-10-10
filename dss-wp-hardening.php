@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DSS — Hardening
  * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, wersja, czas sesji. MU-plugin.
- * Version: 0.5.0
+ * Version: 0.6.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
@@ -14,7 +14,7 @@
  *
  * Układ pliku (każdy dział ma w nim własny nagłówek, a configure() wywołuje go w tej samej kolejności):
  *   1. Ukrywanie loginów: autorzy (/?author=N, archiwa, REST /wp/v2/users, oEmbed, wp-sitemap-users-*.xml,
- *      klasy komentarzy) oraz komunikaty logowania i resetu hasła.
+ *      klasy komentarzy, nazwa autora w kanałach RSS) oraz komunikaty logowania i resetu hasła.
  *   2. Wejścia omijające formularz logowania: XML-RPC i hasła aplikacji.
  *   3. Informacje o systemie: wersja WordPressa (meta generator).
  *   4. Sesje: czas sesji kont edytorskich (opcjonalny).
@@ -62,10 +62,10 @@ function configure(): void
 // 1. UKRYWANIE LOGINÓW
 // Login (zwykle taki sam jak slug autora) to połowa danych do logowania. Tu są wszystkie miejsca, które
 // zdradzają go niezalogowanemu: archiwa i linki autorów, REST API, oEmbed, mapa witryny, klasy komentarzy,
-// komunikaty logowania i resetu hasła.
+// nazwa autora w kanałach RSS, komunikaty logowania i resetu hasła.
 // ==================================================================================================
 
-// ---- 1a. Autorzy: archiwa, linki, REST, oEmbed, mapa witryny, komentarze -------------------------
+// ---- 1a. Autorzy: archiwa, linki, REST, oEmbed, mapa witryny, komentarze, kanały RSS -------------
 
 /**
  * Wyliczanie autorów: każde miejsce, które zdradza login (slug) albo listę użytkowników niezalogowanemu.
@@ -84,6 +84,10 @@ function configure_authors(): void
 
 	// Klasa comment-author-{slug} przy komentarzach zalogowanych użytkowników.
 	add_filter('comment_class', __NAMESPACE__ . '\\remove_comment_author_class');
+
+	// Nazwa autora w kanałach RSS, RDF i Atom. Filtr dodaje dopiero żądanie kanału, więc zwykłe strony płacą
+	// za to jednym sprawdzeniem flagi.
+	add_action('template_redirect', __NAMESPACE__ . '\\hide_feed_author', 5);
 }
 
 /**
@@ -179,6 +183,26 @@ function remove_comment_author_class($classes)
 	return array_values(
 		array_filter($classes, static fn($class): bool => !str_starts_with((string) $class, 'comment-author-'))
 	);
+}
+
+/** Przy żądaniu kanału podmienia nazwę autora na nazwę strony. */
+function hide_feed_author(): void
+{
+	if (is_feed()) {
+		add_filter('the_author', __NAMESPACE__ . '\\feed_site_name');
+	}
+}
+
+/**
+ * Nazwa strony zamiast nazwy wyświetlanej autora (`<dc:creator>` w RSS i RDF, `<author><name>` w Atom).
+ * Kanały komentarzy podają autora komentarza, nie konto, więc ich to nie dotyczy.
+ *
+ * @param mixed $author Nazwa wyświetlana autora.
+ * @return mixed
+ */
+function feed_site_name($author)
+{
+	return get_bloginfo('name');
 }
 
 // ---- 1b. Komunikaty logowania i resetu hasła -----------------------------------------------------

@@ -27,9 +27,15 @@ które zdradzają go niezalogowanemu.
 | `oembed_response_data` (filtr) | odpowiedź oEmbed podaje nazwę i adres strony zamiast `author_name` i `author_url` autora (tak jak rdzeń dla wpisów bez autora) |
 | `wp_sitemaps_add_provider` (filtr) | bez mapy użytkowników: `wp-sitemap-users-*.xml` daje 404 i nie ma jej w `wp-sitemap.xml` |
 | `comment_class` (filtr) | bez klasy `comment-author-{slug}` przy komentarzach zalogowanych użytkowników |
+| `template_redirect` (akcja, priorytet 5) i `the_author` (filtr) | w kanałach RSS 2.0, RDF i Atom nazwa strony zamiast nazwy wyświetlanej autora (`<dc:creator>`, `<author><name>`); filtr `the_author` dodaje dopiero żądanie kanału, więc zwykłe strony płacą za to jednym sprawdzeniem `is_feed()` |
 
 Slug autora (`user_nicename`) jest zwykle taki sam jak login, więc każde z tych miejsc podaje atakującemu
 połowę danych do logowania.
+
+Kanały działają niezależnie od tego, czy `dss-wp-cleanup` je wyłącza: gdy kanały są wyłączone, hak z
+`template_redirect` nic nie robi (`is_feed()` jest fałszem), a po ich włączeniu autor jest już ukryty. Narzut na
+zwykłej stronie: rejestracja jednego haka ok. 2 µs i wywołanie callbacka ok. 0,05 µs na żądanie (pomiar
+w PHP 8.3 na WordPressie 7.1.3, 200 000 powtórzeń; strona główna odpowiadała w ok. 37 ms).
 
 #### 1b. Komunikaty logowania i resetu hasła
 
@@ -116,8 +122,9 @@ stałe w DSS WP Manage 5.3.0 na PHP 8.5.11: `4` i `12` dają stałe typu `int`, 
 
 ## Czego wtyczka nie zasłania
 
-- **Nazwa wyświetlana autora** (`display_name`) w kanałach (`<dc:creator>`) i tam, gdzie wypisuje ją motyw.
-  Nie jest loginem, jeśli w profilu użytkownika ustawisz inną nazwę wyświetlaną niż login.
+- **Nazwa wyświetlana autora** (`display_name`) tam, gdzie wypisuje ją motyw (podpis wpisu), i autor komentarza
+  w kanałach komentarzy (komentarz zalogowanego użytkownika bez zapisanej nazwy dostaje jego `display_name`).
+  Nie jest loginem, jeśli w profilu użytkownika ustawisz inną nazwę wyświetlaną niż login; ustaw ją inną.
 - **ID autora** w REST API wpisów (`author`). Bez trasy `/wp/v2/users` ID nie prowadzi do loginu.
 - **Różnica czasu odpowiedzi** przy logowaniu i resecie hasła dla istniejącego i nieistniejącego konta.
 

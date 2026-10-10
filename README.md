@@ -16,7 +16,7 @@ limity prób logowania i reguły WAF ustawiają serwer i Cloudflare (opis dla st
 1. **Ukrywanie loginów:**
    - niezalogowany nie pozna loginów (slugów) autorów: `/?author=N`, archiwa autorów i ich kanały dają 404,
      linki do archiwów prowadzą na stronę główną, nie ma tras REST `/wp/v2/users` ani mapy
-     `wp-sitemap-users-*.xml`, oEmbed i klasy komentarzy nie podają autora;
+     `wp-sitemap-users-*.xml`, oEmbed, klasy komentarzy i kanały RSS nie podają autora;
    - logowanie i reset hasła nie zdradzają, czy konto istnieje.
 2. **Wejścia omijające formularz logowania:**
    - `xmlrpc.php` odpowiada 403, bez nagłówka `X-Pingback`;
