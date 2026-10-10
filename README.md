@@ -19,6 +19,7 @@ limity prób logowania i reguły WAF ustawiają serwer i Cloudflare (opis dla st
   `wp-sitemap-users-*.xml`, oEmbed i klasy komentarzy nie podają autora.
 - Logowanie i reset hasła nie zdradzają, czy konto istnieje.
 - Bez wersji WordPressa w meta `generator` i w kanałach.
+- Bez haseł aplikacji (logowanie aplikacji do REST API i XML-RPC z pominięciem formularza logowania).
 
 Zalogowani mają dalej panel i REST API. Każdy hak z powodem i to, czego wtyczka nie zasłania:
 [docs/DZIALANIE.md](docs/DZIALANIE.md).

@@ -52,6 +52,18 @@ Reset hasła wywołany poza `wp-login.php` (np. z listy użytkowników w panelu)
 
 Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odświeżanie cache przeglądarki.
 
+### Hasła aplikacji
+
+| Hak | Co robi |
+|---|---|
+| `wp_is_application_passwords_available` (filtr) | `false`: rdzeń nie przyjmuje logowania hasłem aplikacji (Basic Auth w REST API i XML-RPC), nie pokazuje sekcji „Hasła aplikacji” w profilu i nie podaje adresu autoryzacji aplikacji w indeksie REST API |
+
+Hasło aplikacji to dodatkowe stałe dane logowania do konta, które omijają formularz logowania (także wyzwanie
+Cloudflare i 2FA). Strona z nich nie korzysta: żadna aplikacja ani usługa nie łączy się z nią w ten sposób.
+Zalogowany w przeglądarce użytkownik korzysta z REST API dalej (ciasteczko i nonce). Sprawdzone na WordPressie
+7.1.3: zapytanie do `/wp-json/wp/v2/settings` z istniejącym hasłem aplikacji administratora daje 200 bez
+wtyczki i 401 `rest_forbidden` z wtyczką. Wcześniej utworzone hasła zostają w bazie, ale nie działają.
+
 ## Czego wtyczka nie zasłania
 
 - **Nazwa wyświetlana autora** (`display_name`) w kanałach (`<dc:creator>`) i tam, gdzie wypisuje ją motyw.

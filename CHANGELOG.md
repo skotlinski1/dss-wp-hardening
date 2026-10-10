@@ -5,6 +5,13 @@ Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), we
 `Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
 
+## 0.4.0 — 2026-10-09
+
+- Hasła aplikacji wyłączone (`wp_is_application_passwords_available` = false): rdzeń nie przyjmuje logowania
+  hasłem aplikacji w REST API i XML-RPC i nie pokazuje tej sekcji w profilu. Wcześniej utworzone hasła przestają
+  działać. Na stronie z Patchstackiem tę opcję wyłącza się w Patchstacku (zob. `docs/BEZPIECZENSTWO.md` w repo
+  `dss-wp-site`).
+
 ## 0.3.0 — 2026-10-09
 
 - Nowa nazwa: repo `dss-wp-hardening`, paczka `dss/wp-hardening`, plik `dss-wp-hardening.php`, przestrzeń nazw

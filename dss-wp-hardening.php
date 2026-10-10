@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DSS — Hardening
  * Description: Utwardzenie WordPressa: wyliczanie autorów, wersja WordPressa, XML-RPC. MU-plugin.
- * Version: 0.3.0
+ * Version: 0.4.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
@@ -10,8 +10,8 @@
  *
  * Zakres (SRP): informacje i wejścia, które pomagają atakującemu: wyliczanie autorów (/?author=N,
  * archiwa autorów, REST /wp/v2/users, author_name w oEmbed, wp-sitemap-users-*.xml, komunikaty
- * logowania i resetu hasła), wersja WordPressa (meta generator) i XML-RPC. Pytanie kontrolne:
- * „dlaczego usuwamy?”. Bo pomaga atakującemu: tutaj. Bo zbędne albo ciężkie: dss-wp-cleanup.
+ * logowania i resetu hasła), wersja WordPressa (meta generator), XML-RPC i hasła aplikacji. Pytanie
+ * kontrolne: „dlaczego usuwamy?”. Bo pomaga atakującemu: tutaj. Bo zbędne albo ciężkie: dss-wp-cleanup.
  * Nagłówki bezpieczeństwa HTTP i limity logowań ustawia serwer, nie ta wtyczka.
  *
  * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API.
@@ -41,6 +41,7 @@ function configure(): void
 	configure_authors();
 	configure_login();
 	configure_version();
+	configure_app_passwords();
 }
 
 /**
@@ -255,4 +256,14 @@ function hide_unknown_account($errors, $user_data): void
 function configure_version(): void
 {
 	add_filter('the_generator', '__return_empty_string');
+}
+
+/**
+ * Hasła aplikacji: strona ich nie używa (żadna aplikacja ani usługa nie łączy się z REST API ani XML-RPC
+ * hasłem aplikacji), a każde takie hasło to dodatkowe stałe dane logowania do konta, które omijają formularz
+ * logowania. Bez nich rdzeń nie przyjmuje Basic Auth z hasłem aplikacji i nie pokazuje sekcji w profilu.
+ */
+function configure_app_passwords(): void
+{
+	add_filter('wp_is_application_passwords_available', '__return_false');
 }
