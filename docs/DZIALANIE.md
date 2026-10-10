@@ -3,24 +3,21 @@
 Zakres (SRP): informacje i wejścia, które pomagają atakującemu. Podział między wtyczki DSS: sekcja 5
 [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md#5-zakres-i-podział-między-wtyczki).
 
-Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wszystkie haki rejestruje
+Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
+edytorskich, który działa tylko po ustawieniu stałych (dział „4. Czas sesji”). Wszystkie haki rejestruje
 `configure()` na `plugins_loaded`. Nazwy filtrów i kody błędów sprawdzone w kodzie WordPressa 7.1.3.
 
 ## Haki aktywne
 
-### XML-RPC
+Haki są pogrupowane w cztery działy, tak samo jak w pliku `dss-wp-hardening.php` (każdy dział ma tam nagłówek
+o tej samej nazwie, a `configure()` wywołuje je w tej kolejności).
 
-| Hak | Co robi |
-|---|---|
-| `plugins_loaded` (w `configure()`) | żądanie do `xmlrpc.php` (także `?rsd`) kończy się kodem 403 i tekstem „XML-RPC jest wyłączone.”, zanim rdzeń zbuduje serwer XML-RPC |
-| `wp_headers` (filtr) | bez nagłówka `X-Pingback`, który rdzeń wysyła na wpisach z otwartymi pingami |
+### 1. Ukrywanie loginów
 
-Z XML-RPC korzystają aplikacja mobilna WordPressa, Jetpack i pingbacki; strona żadnego z nich nie używa.
-`xmlrpc.php` przyjmuje próby logowania (także wiele naraz w `system.multicall`), więc to typowy cel ataków na
-hasła. Wtyczka zatrzymuje żądanie po załadowaniu WordPressa; blokada na serwerze (LiteSpeed) oszczędza też to
-ładowanie.
+Login (zwykle taki sam jak slug autora) to połowa danych do logowania. Ten dział zamyka wszystkie miejsca,
+które zdradzają go niezalogowanemu.
 
-### Wyliczanie autorów
+#### 1a. Autorzy
 
 | Hak | Co robi |
 |---|---|
@@ -34,7 +31,7 @@ hasła. Wtyczka zatrzymuje żądanie po załadowaniu WordPressa; blokada na serw
 Slug autora (`user_nicename`) jest zwykle taki sam jak login, więc każde z tych miejsc podaje atakującemu
 połowę danych do logowania.
 
-### Logowanie i reset hasła
+#### 1b. Komunikaty logowania i resetu hasła
 
 | Hak | Co robi |
 |---|---|
@@ -44,15 +41,21 @@ połowę danych do logowania.
 Puste pola dają dalej komunikaty rdzenia („The username field is empty.” itd.), bo niczego nie zdradzają.
 Reset hasła wywołany poza `wp-login.php` (np. z listy użytkowników w panelu) działa bez zmian.
 
-### Wersja WordPressa
+### 2. Wejścia omijające formularz logowania
+
+#### 2a. XML-RPC
 
 | Hak | Co robi |
 |---|---|
-| `the_generator` (filtr) | pusty tekst zamiast `<meta name="generator" content="WordPress X.Y.Z">` w `<head>` i `<generator>` w kanałach; obejmuje każde miejsce, w którym rdzeń wypisuje wersję przez `the_generator()` |
+| `plugins_loaded` (w `configure()`) | żądanie do `xmlrpc.php` (także `?rsd`) kończy się kodem 403 i tekstem „XML-RPC jest wyłączone.”, zanim rdzeń zbuduje serwer XML-RPC |
+| `wp_headers` (filtr) | bez nagłówka `X-Pingback`, który rdzeń wysyła na wpisach z otwartymi pingami |
 
-Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odświeżanie cache przeglądarki.
+Z XML-RPC korzystają aplikacja mobilna WordPressa, Jetpack i pingbacki; strona żadnego z nich nie używa.
+`xmlrpc.php` przyjmuje próby logowania (także wiele naraz w `system.multicall`), więc to typowy cel ataków na
+hasła. Wtyczka zatrzymuje żądanie po załadowaniu WordPressa; blokada na serwerze (LiteSpeed) oszczędza też to
+ładowanie.
 
-### Hasła aplikacji
+#### 2b. Hasła aplikacji
 
 | Hak | Co robi |
 |---|---|
@@ -63,6 +66,52 @@ Cloudflare i 2FA). Strona z nich nie korzysta: żadna aplikacja ani usługa nie 
 Zalogowany w przeglądarce użytkownik korzysta z REST API dalej (ciasteczko i nonce). Sprawdzone na WordPressie
 7.1.3: zapytanie do `/wp-json/wp/v2/settings` z istniejącym hasłem aplikacji administratora daje 200 bez
 wtyczki i 401 `rest_forbidden` z wtyczką. Wcześniej utworzone hasła zostają w bazie, ale nie działają.
+
+### 3. Informacje o systemie
+
+#### 3a. Wersja WordPressa
+
+| Hak | Co robi |
+|---|---|
+| `the_generator` (filtr) | pusty tekst zamiast `<meta name="generator" content="WordPress X.Y.Z">` w `<head>` i `<generator>` w kanałach; obejmuje każde miejsce, w którym rdzeń wypisuje wersję przez `the_generator()` |
+
+Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odświeżanie cache przeglądarki.
+
+### 4. Czas sesji
+
+| Hak | Co robi |
+|---|---|
+| `auth_cookie_expiration` (filtr, priorytet 99, tylko gdy ustawiono stałą) | skraca czas sesji kont z uprawnieniem `edit_posts`: stała `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` dla logowania bez „Zapamiętaj mnie”, `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` dla logowania z nim |
+
+Stałe są w godzinach i pochodzą zwykle z `.env` ([INSTALACJA.md](INSTALACJA.md#czas-sesji-kont-edytorskich)).
+Reguły:
+
+- **Kogo dotyczy:** kont z uprawnieniem `edit_posts`: administrator, redaktor, autor i współpracownik. Konta
+  bez niego (subskrybent, klient sklepu) mają czas sesji z WordPressa, czyli 2 dni bez „Zapamiętaj mnie” i 14
+  dni z nim.
+- **Tylko skraca:** wartość dłuższa niż ta z WordPressa niczego nie zmienia. Stała, której nie ma, albo której
+  wartość nie jest dodatnią liczbą całkowitą (`0`, liczba ujemna, ułamek, tekst niebędący liczbą), jest
+  pomijana. Gdy żadna z
+  dwóch nie jest ustawiona, wtyczka nie rejestruje filtra.
+- **Czas liczy się od logowania**, nie od ostatniej aktywności: WordPress nie przedłuża sesji przy pracy.
+  Po jej końcu prosi o ponowne zalogowanie. Czas sesji jest zapisany w bazie przy logowaniu, więc trwająca
+  sesja zachowuje czas, z jakim powstała; nowa wartość działa od następnego logowania.
+- **Karencja rdzenia:** żądania zapisu (POST) i ajax są przyjmowane do godziny po końcu sesji. Wtyczka jej nie
+  zmienia, więc najdłuższy czas dla zapisów to czas sesji plus godzina.
+- **Ciasteczko w przeglądarce:** bez „Zapamiętaj mnie” jest sesyjne (znika po zamknięciu przeglądarki), z nim
+  trwałe. Trwałe ciasteczko przeglądarka trzyma o 12 godzin dłużej niż wynosi czas sesji (zapas rdzenia na
+  karencję), ale serwer odrzuca sesję po czasie sesji.
+- **Zmiana własnego hasła w profilu** zachowuje oba czasy. Rdzeń rozpoznaje wtedy „Zapamiętaj mnie” po tym, że
+  ciasteczko żyje dłużej niż czas sesji bez niego, więc `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` ma być
+  większe od `DSS_WP_HARDENING_ADMIN_SESSION_HOURS`.
+
+Skradzione ciasteczko działa do końca sesji albo do wylogowania, które usuwa token z bazy. Czas sesji skraca to
+okno, ale go nie zamyka: nie zastępuje 2FA, aktualizacji ani wylogowania po pracy.
+
+Sprawdzone na WordPressie 7.1.3 przez prawdziwe logowanie na `wp-login.php` (czas sesji z `session_tokens`):
+przy 4 i 12 godzinach administrator, redaktor, autor i współpracownik dostają 4 h bez „Zapamiętaj mnie” i 12 h
+z nim, subskrybent i rola z samym uprawnieniem `read` 48 h i 336 h, tyle samo co bez wtyczki. Nie sprawdzono
+roli klienta WooCommerce (instalacja próbna nie ma WooCommerce) ani zamiany `.env` na stałe w DSS WP Manage.
 
 ## Czego wtyczka nie zasłania
 

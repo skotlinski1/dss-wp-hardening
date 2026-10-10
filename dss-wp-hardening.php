@@ -1,20 +1,26 @@
 <?php
 /**
  * Plugin Name: DSS — Hardening
- * Description: Utwardzenie WordPressa: wyliczanie autorów, wersja WordPressa, XML-RPC. MU-plugin.
- * Version: 0.4.0
+ * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, wersja, czas sesji. MU-plugin.
+ * Version: 0.5.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
  * Opis haków i instalacja: README.md i docs/ w repozytorium.
  *
- * Zakres (SRP): informacje i wejścia, które pomagają atakującemu: wyliczanie autorów (/?author=N,
- * archiwa autorów, REST /wp/v2/users, author_name w oEmbed, wp-sitemap-users-*.xml, komunikaty
- * logowania i resetu hasła), wersja WordPressa (meta generator), XML-RPC i hasła aplikacji. Pytanie
- * kontrolne: „dlaczego usuwamy?”. Bo pomaga atakującemu: tutaj. Bo zbędne albo ciężkie: dss-wp-cleanup.
- * Nagłówki bezpieczeństwa HTTP i limity logowań ustawia serwer, nie ta wtyczka.
+ * Zakres (SRP): informacje i wejścia, które pomagają atakującemu. Pytanie kontrolne: „dlaczego usuwamy?”.
+ * Bo pomaga atakującemu: tutaj. Bo zbędne albo ciężkie: dss-wp-cleanup. Nagłówki bezpieczeństwa HTTP i
+ * limity logowań ustawia serwer, nie ta wtyczka.
  *
- * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API.
+ * Układ pliku (każdy dział ma w nim własny nagłówek, a configure() wywołuje go w tej samej kolejności):
+ *   1. Ukrywanie loginów: autorzy (/?author=N, archiwa, REST /wp/v2/users, oEmbed, wp-sitemap-users-*.xml,
+ *      klasy komentarzy) oraz komunikaty logowania i resetu hasła.
+ *   2. Wejścia omijające formularz logowania: XML-RPC i hasła aplikacji.
+ *   3. Informacje o systemie: wersja WordPressa (meta generator).
+ *   4. Sesje: czas sesji kont edytorskich (opcjonalny).
+ *
+ * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
+ * edytorskich, który działa tylko po ustawieniu stałych.
  */
 
 declare(strict_types=1);
@@ -34,47 +40,32 @@ if (defined('DSS_WP_HARDENING_DISABLED') && DSS_WP_HARDENING_DISABLED) {
 // Po wczytaniu wszystkich wtyczek: haki rejestruje configure().
 add_action('plugins_loaded', __NAMESPACE__ . '\\configure');
 
-/** Rejestruje haki; każdy temat ma własną funkcję. */
+/** Rejestruje haki; każdy temat ma własną funkcję, tematy są pogrupowane jak działy tego pliku. */
 function configure(): void
 {
-	configure_xmlrpc();
+	// 1. Ukrywanie loginów.
 	configure_authors();
 	configure_login();
-	configure_version();
+
+	// 2. Wejścia omijające formularz logowania.
+	configure_xmlrpc();
 	configure_app_passwords();
+
+	// 3. Informacje o systemie.
+	configure_version();
+
+	// 4. Sesje.
+	configure_sessions();
 }
 
-/**
- * XML-RPC: strona go nie używa (aplikacje mobilne i Jetpack nie są podłączone), a `xmlrpc.php` przyjmuje
- * próby logowania i pingbacki. Żądanie kończy się kodem 403, zanim rdzeń zbuduje serwer XML-RPC.
- */
-function configure_xmlrpc(): void
-{
-	if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
-		status_header(403);
-		header('Content-Type: text/plain; charset=utf-8');
-		echo 'XML-RPC jest wyłączone.';
-		exit;
-	}
+// ==================================================================================================
+// 1. UKRYWANIE LOGINÓW
+// Login (zwykle taki sam jak slug autora) to połowa danych do logowania. Tu są wszystkie miejsca, które
+// zdradzają go niezalogowanemu: archiwa i linki autorów, REST API, oEmbed, mapa witryny, klasy komentarzy,
+// komunikaty logowania i resetu hasła.
+// ==================================================================================================
 
-	// Nagłówek X-Pingback na wpisach wskazuje xmlrpc.php.
-	add_filter('wp_headers', __NAMESPACE__ . '\\remove_pingback_header');
-}
-
-/**
- * Usuwa nagłówek `X-Pingback`.
- *
- * @param mixed $headers Nagłówki odpowiedzi.
- * @return mixed
- */
-function remove_pingback_header($headers)
-{
-	if (is_array($headers)) {
-		unset($headers['X-Pingback']);
-	}
-
-	return $headers;
-}
+// ---- 1a. Autorzy: archiwa, linki, REST, oEmbed, mapa witryny, komentarze -------------------------
 
 /**
  * Wyliczanie autorów: każde miejsce, które zdradza login (slug) albo listę użytkowników niezalogowanemu.
@@ -190,6 +181,8 @@ function remove_comment_author_class($classes)
 	);
 }
 
+// ---- 1b. Komunikaty logowania i resetu hasła -----------------------------------------------------
+
 /**
  * Logowanie i reset hasła nie zdradzają, czy konto istnieje: jeden komunikat dla złego loginu, e-maila i
  * hasła, a reset hasła dla nieznanego konta kończy się tak samo jak dla istniejącego.
@@ -249,14 +242,47 @@ function hide_unknown_account($errors, $user_data): void
 	exit;
 }
 
+// ==================================================================================================
+// 2. WEJŚCIA OMIJAJĄCE FORMULARZ LOGOWANIA
+// XML-RPC przyjmuje próby logowania (także wiele naraz), a hasło aplikacji to stałe dane logowania bez
+// formularza, wyzwania Cloudflare i 2FA.
+// ==================================================================================================
+
+// ---- 2a. XML-RPC ---------------------------------------------------------------------------------
+
 /**
- * Wersja WordPressa: meta `generator` w `<head>` i znacznik `<generator>` w kanałach. Filtr obejmuje
- * wszystkie miejsca, w których rdzeń ją wypisuje przez the_generator().
+ * XML-RPC: strona go nie używa (aplikacje mobilne i Jetpack nie są podłączone), a `xmlrpc.php` przyjmuje
+ * próby logowania i pingbacki. Żądanie kończy się kodem 403, zanim rdzeń zbuduje serwer XML-RPC.
  */
-function configure_version(): void
+function configure_xmlrpc(): void
 {
-	add_filter('the_generator', '__return_empty_string');
+	if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) {
+		status_header(403);
+		header('Content-Type: text/plain; charset=utf-8');
+		echo 'XML-RPC jest wyłączone.';
+		exit;
+	}
+
+	// Nagłówek X-Pingback na wpisach wskazuje xmlrpc.php.
+	add_filter('wp_headers', __NAMESPACE__ . '\\remove_pingback_header');
 }
+
+/**
+ * Usuwa nagłówek `X-Pingback`.
+ *
+ * @param mixed $headers Nagłówki odpowiedzi.
+ * @return mixed
+ */
+function remove_pingback_header($headers)
+{
+	if (is_array($headers)) {
+		unset($headers['X-Pingback']);
+	}
+
+	return $headers;
+}
+
+// ---- 2b. Hasła aplikacji -------------------------------------------------------------------------
 
 /**
  * Hasła aplikacji: strona ich nie używa (żadna aplikacja ani usługa nie łączy się z REST API ani XML-RPC
@@ -266,4 +292,86 @@ function configure_version(): void
 function configure_app_passwords(): void
 {
 	add_filter('wp_is_application_passwords_available', '__return_false');
+}
+
+// ==================================================================================================
+// 3. INFORMACJE O SYSTEMIE
+// Dane o instalacji, które pomagają dobrać atak.
+// ==================================================================================================
+
+/**
+ * Wersja WordPressa: meta `generator` w `<head>` i znacznik `<generator>` w kanałach. Filtr obejmuje
+ * wszystkie miejsca, w których rdzeń ją wypisuje przez the_generator().
+ */
+function configure_version(): void
+{
+	add_filter('the_generator', '__return_empty_string');
+}
+
+// ==================================================================================================
+// 4. SESJE
+// Czas sesji kont edytorskich. Opcjonalny: bez stałych wtyczka niczego tu nie rejestruje.
+// ==================================================================================================
+
+/**
+ * Czas sesji kont z uprawnieniem `edit_posts` (administrator, redaktor, autor, współpracownik): skradzione
+ * ciasteczko takiego konta działa tylko do końca sesji. Dwie stałe w godzinach (zwykle z `.env`):
+ * DSS_WP_HARDENING_ADMIN_SESSION_HOURS dla logowania bez „Zapamiętaj mnie” i
+ * DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS dla logowania z nim. Bez stałej (albo z wartością niedodatnią) dany
+ * czas zostaje taki, jak ustawia WordPress. Konta bez `edit_posts` (subskrybent, klient sklepu) nie są
+ * objęte.
+ */
+function configure_sessions(): void
+{
+	if (session_hours('DSS_WP_HARDENING_ADMIN_SESSION_HOURS') === 0
+		&& session_hours('DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS') === 0) {
+		return;
+	}
+
+	// Późny priorytet: skraca także wartość ustawioną przez inne filtry. Filtr działa tylko przy logowaniu.
+	add_filter('auth_cookie_expiration', __NAMESPACE__ . '\\shorten_session', 99, 3);
+}
+
+/**
+ * Skraca czas sesji konta z uprawnieniem `edit_posts`. Nigdy go nie wydłuża: stała większa od wartości
+ * ustawionej przez WordPress niczego nie zmienia.
+ *
+ * @param mixed $length   Czas sesji w sekundach.
+ * @param mixed $user_id  ID użytkownika.
+ * @param mixed $remember Czy zaznaczono „Zapamiętaj mnie”.
+ * @return mixed
+ */
+function shorten_session($length, $user_id = 0, $remember = false)
+{
+	if (!is_numeric($length)) {
+		return $length;
+	}
+	$hours = session_hours(
+		$remember ? 'DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS' : 'DSS_WP_HARDENING_ADMIN_SESSION_HOURS'
+	);
+	if ($hours === 0 || !user_can((int) $user_id, 'edit_posts')) {
+		return $length;
+	}
+
+	return min((int) $length, $hours * HOUR_IN_SECONDS);
+}
+
+/**
+ * Czyta stałą z liczbą godzin.
+ *
+ * @param string $constant Nazwa stałej.
+ * @return int Liczba godzin albo 0, gdy stałej nie ma lub nie jest dodatnią liczbą całkowitą.
+ */
+function session_hours(string $constant): int
+{
+	if (!defined($constant)) {
+		return 0;
+	}
+	$value = constant($constant);
+	if (!is_int($value) && !is_string($value)) {
+		return 0;
+	}
+	$hours = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+	return $hours === false ? 0 : $hours;
 }
