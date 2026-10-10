@@ -22,10 +22,10 @@ limity prób logowania i reguły WAF ustawiają serwer i Cloudflare (opis dla st
    - `xmlrpc.php` odpowiada 403, bez nagłówka `X-Pingback`;
    - bez haseł aplikacji (logowanie aplikacji do REST API i XML-RPC z pominięciem formularza logowania).
 3. **Informacje o systemie:** bez wersji WordPressa w meta `generator` i w kanałach.
-4. **Sesje (opcjonalnie):** krótsza sesja kont edytorskich (administrator, redaktor, autor, współpracownik),
-   osobno z „Zapamiętaj mnie” i bez niego; klienci sklepu zostają przy czasie z WordPressa. Wyłączona, dopóki
-   nie ustawisz stałych `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` i `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS`
-   ([docs/INSTALACJA.md](docs/INSTALACJA.md#czas-sesji-kont-edytorskich)).
+4. **Sesje:** konta edytorskie (administrator, redaktor, autor, współpracownik) mają sesję 4 godziny, a z
+   „Zapamiętaj mnie” 12; klienci sklepu zostają przy czasie z WordPressa. Stałe
+   `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` i `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` zmieniają te wartości, a `0`
+   je wyłącza ([docs/INSTALACJA.md](docs/INSTALACJA.md#czas-sesji-kont-edytorskich)).
 
 Zalogowani mają dalej panel i REST API. Każdy hak z powodem i to, czego wtyczka nie zasłania:
 [docs/DZIALANIE.md](docs/DZIALANIE.md).

@@ -4,7 +4,7 @@ Zakres (SRP): informacje i wejścia, które pomagają atakującemu. Podział mi�
 [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md#5-zakres-i-podział-między-wtyczki).
 
 Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
-edytorskich, który działa tylko po ustawieniu stałych (dział „4. Czas sesji”). Wszystkie haki rejestruje
+edytorskich (domyślnie 4 godziny, a z „Zapamiętaj mnie” 12; dział „4. Czas sesji”). Wszystkie haki rejestruje
 `configure()` na `plugins_loaded`. Nazwy filtrów i kody błędów sprawdzone w kodzie WordPressa 7.1.3.
 
 ## Haki aktywne
@@ -87,18 +87,19 @@ Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odś
 
 | Hak | Co robi |
 |---|---|
-| `auth_cookie_expiration` (filtr, priorytet 99, tylko gdy ustawiono stałą) | skraca czas sesji kont z uprawnieniem `edit_posts`: stała `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` dla logowania bez „Zapamiętaj mnie”, `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` dla logowania z nim |
+| `auth_cookie_expiration` (filtr, priorytet 99) | skraca czas sesji kont z uprawnieniem `edit_posts` do 4 godzin bez „Zapamiętaj mnie” i do 12 godzin z nim; stałe `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` i `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` zmieniają te wartości |
 
-Stałe są w godzinach i pochodzą zwykle z `.env` ([INSTALACJA.md](INSTALACJA.md#czas-sesji-kont-edytorskich)).
-Reguły:
+Domyślne 4 i 12 godzin działają bez żadnego wpisu. Stałe są w godzinach i pochodzą zwykle z `.env`
+([INSTALACJA.md](INSTALACJA.md#czas-sesji-kont-edytorskich)). Reguły:
 
 - **Kogo dotyczy:** kont z uprawnieniem `edit_posts`: administrator, redaktor, autor i współpracownik. Konta
   bez niego (subskrybent, klient sklepu) mają czas sesji z WordPressa, czyli 2 dni bez „Zapamiętaj mnie” i 14
   dni z nim.
-- **Tylko skraca:** wartość dłuższa niż ta z WordPressa niczego nie zmienia. Stała, której nie ma, albo której
-  wartość nie jest dodatnią liczbą całkowitą (`0`, liczba ujemna, ułamek, tekst niebędący liczbą), jest
-  pomijana. Gdy żadna z
-  dwóch nie jest ustawiona, wtyczka nie rejestruje filtra.
+- **Stała zmienia wartość:** dodatnia liczba całkowita to nowa liczba godzin. `0` wyłącza skracanie danego
+  czasu (zostaje czas z WordPressa). Wartość błędna (liczba ujemna, ułamek, tekst niebędący liczbą) jest
+  pomijana i obowiązuje domyślna. Gdy obie stałe mają `0`, wtyczka nie rejestruje filtra. `0` ustawiaj w obu
+  stałych naraz: z jedną samą `0` czas bez „Zapamiętaj mnie” (48 h) byłby dłuższy niż z nim (12 h).
+- **Tylko skraca:** wartość dłuższa niż ta z WordPressa (48 i 336 godzin) niczego nie zmienia.
 - **Czas liczy się od logowania**, nie od ostatniej aktywności: WordPress nie przedłuża sesji przy pracy.
   Po jej końcu prosi o ponowne zalogowanie. Czas sesji jest zapisany w bazie przy logowaniu, więc trwająca
   sesja zachowuje czas, z jakim powstała; nowa wartość działa od następnego logowania.
@@ -115,10 +116,13 @@ Skradzione ciasteczko działa do końca sesji albo do wylogowania, które usuwa 
 okno, ale go nie zamyka: nie zastępuje 2FA, aktualizacji ani wylogowania po pracy.
 
 Sprawdzone na WordPressie 7.1.3 przez prawdziwe logowanie na `wp-login.php` (czas sesji z `session_tokens`):
-przy 4 i 12 godzinach administrator, redaktor, autor i współpracownik dostają 4 h bez „Zapamiętaj mnie” i 12 h
-z nim, subskrybent i rola z samym uprawnieniem `read` 48 h i 336 h, tyle samo co bez wtyczki. Zamiana `.env` na
-stałe w DSS WP Manage 5.3.0 na PHP 8.5.11: `4` i `12` dają stałe typu `int`, a wartość `abc` zatrzymuje kompilację
-(`expected int`). Nie sprawdzono roli klienta WooCommerce (instalacja próbna nie ma WooCommerce).
+bez stałych administrator, redaktor, autor i współpracownik dostają 4 h bez „Zapamiętaj mnie” i 12 h z nim,
+subskrybent i rola z samym uprawnieniem `read` 48 h i 336 h, tyle samo co bez wtyczki. Stałe `0` i `0` dają
+48 h i 336 h, `24` i `72` dają 24 h i 72 h, `1000` i `1000` dają 48 h i 336 h, a `abc` i `-3` dają 4 h i 12 h.
+Wyłącznik awaryjny przywraca 48 h i 336 h. Zmiana własnego hasła zachowuje 4 h i 12 h, a panel działa dalej.
+Zamiana `.env` na stałe w DSS WP Manage 5.3.0 na PHP 8.5.11: `4` i `12` dają stałe typu `int`, a wartość `abc`
+zatrzymuje kompilację (`expected int`). Nie sprawdzono roli klienta WooCommerce (instalacja próbna nie ma
+WooCommerce).
 
 ## Czego wtyczka nie zasłania
 

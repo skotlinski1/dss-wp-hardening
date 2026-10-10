@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DSS — Hardening
  * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, wersja, czas sesji. MU-plugin.
- * Version: 0.6.0
+ * Version: 0.7.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
@@ -17,10 +17,10 @@
  *      klasy komentarzy, nazwa autora w kanałach RSS) oraz komunikaty logowania i resetu hasła.
  *   2. Wejścia omijające formularz logowania: XML-RPC i hasła aplikacji.
  *   3. Informacje o systemie: wersja WordPressa (meta generator).
- *   4. Sesje: czas sesji kont edytorskich (opcjonalny).
+ *   4. Sesje: czas sesji kont edytorskich.
  *
  * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
- * edytorskich, który działa tylko po ustawieniu stałych.
+ * edytorskich (domyślnie 4 godziny, a z „Zapamiętaj mnie” 12; stałe go zmieniają, a 0 wyłącza).
  */
 
 declare(strict_types=1);
@@ -334,21 +334,21 @@ function configure_version(): void
 
 // ==================================================================================================
 // 4. SESJE
-// Czas sesji kont edytorskich. Opcjonalny: bez stałych wtyczka niczego tu nie rejestruje.
+// Czas sesji kont edytorskich: domyślnie 4 godziny, a z „Zapamiętaj mnie” 12. Stałe go zmieniają albo
+// wyłączają (0).
 // ==================================================================================================
 
 /**
  * Czas sesji kont z uprawnieniem `edit_posts` (administrator, redaktor, autor, współpracownik): skradzione
- * ciasteczko takiego konta działa tylko do końca sesji. Dwie stałe w godzinach (zwykle z `.env`):
- * DSS_WP_HARDENING_ADMIN_SESSION_HOURS dla logowania bez „Zapamiętaj mnie” i
- * DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS dla logowania z nim. Bez stałej (albo z wartością niedodatnią) dany
- * czas zostaje taki, jak ustawia WordPress. Konta bez `edit_posts` (subskrybent, klient sklepu) nie są
- * objęte.
+ * ciasteczko takiego konta działa tylko do końca sesji. Domyślnie 4 godziny, a z „Zapamiętaj mnie” 12. Dwie
+ * stałe w godzinach (zwykle z `.env`) zmieniają te wartości: DSS_WP_HARDENING_ADMIN_SESSION_HOURS dla
+ * logowania bez „Zapamiętaj mnie” i DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS dla logowania z nim. Wartość 0
+ * przywraca czas ustawiony przez WordPress (2 dni i 14 dni). Konta bez `edit_posts` (subskrybent, klient
+ * sklepu) nie są objęte.
  */
 function configure_sessions(): void
 {
-	if (session_hours('DSS_WP_HARDENING_ADMIN_SESSION_HOURS') === 0
-		&& session_hours('DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS') === 0) {
+	if (admin_session_hours(false) === 0 && admin_session_hours(true) === 0) {
 		return;
 	}
 
@@ -357,8 +357,8 @@ function configure_sessions(): void
 }
 
 /**
- * Skraca czas sesji konta z uprawnieniem `edit_posts`. Nigdy go nie wydłuża: stała większa od wartości
- * ustawionej przez WordPress niczego nie zmienia.
+ * Skraca czas sesji konta z uprawnieniem `edit_posts`. Nigdy go nie wydłuża: wartość większa od ustawionej
+ * przez WordPress niczego nie zmienia.
  *
  * @param mixed $length   Czas sesji w sekundach.
  * @param mixed $user_id  ID użytkownika.
@@ -370,9 +370,7 @@ function shorten_session($length, $user_id = 0, $remember = false)
 	if (!is_numeric($length)) {
 		return $length;
 	}
-	$hours = session_hours(
-		$remember ? 'DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS' : 'DSS_WP_HARDENING_ADMIN_SESSION_HOURS'
-	);
+	$hours = admin_session_hours((bool) $remember);
 	if ($hours === 0 || !user_can((int) $user_id, 'edit_posts')) {
 		return $length;
 	}
@@ -381,21 +379,35 @@ function shorten_session($length, $user_id = 0, $remember = false)
 }
 
 /**
+ * Liczba godzin sesji kont edytorskich: stała, a bez niej wartość domyślna (4 albo 12).
+ *
+ * @param bool $remember Czy chodzi o logowanie z „Zapamiętaj mnie”.
+ * @return int Liczba godzin; 0 przywraca czas WordPressa.
+ */
+function admin_session_hours(bool $remember): int
+{
+	return $remember
+		? session_hours('DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS', 12)
+		: session_hours('DSS_WP_HARDENING_ADMIN_SESSION_HOURS', 4);
+}
+
+/**
  * Czyta stałą z liczbą godzin.
  *
  * @param string $constant Nazwa stałej.
- * @return int Liczba godzin albo 0, gdy stałej nie ma lub nie jest dodatnią liczbą całkowitą.
+ * @param int    $default  Wartość, gdy stałej nie ma albo nie jest liczbą całkowitą od 0 w górę.
+ * @return int Liczba godzin; 0 oznacza „bez skracania”.
  */
-function session_hours(string $constant): int
+function session_hours(string $constant, int $default): int
 {
 	if (!defined($constant)) {
-		return 0;
+		return $default;
 	}
 	$value = constant($constant);
 	if (!is_int($value) && !is_string($value)) {
-		return 0;
+		return $default;
 	}
-	$hours = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+	$hours = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
 
-	return $hours === false ? 0 : $hours;
+	return $hours === false ? $default : $hours;
 }
