@@ -66,6 +66,8 @@ Po wdrożeniu i po każdej większej aktualizacji WordPressa, w oknie prywatnym 
 5. Po zalogowaniu panel działa, a lista użytkowników się otwiera.
 6. Jeśli ustawiono czas sesji: po zalogowaniu na konto administratora `wp user meta get ID session_tokens`
    pokazuje `expiration` o podaną liczbę godzin późniejsze niż `login`.
+7. Jeśli strona publikuje kanały RSS (nie wyłącza ich `dss-wp-cleanup`): w `https://twoja-domena.pl/feed/` pole
+   `<dc:creator>` zawiera nazwę strony, nie autora.
 
 Filtry są na miejscu (brak błędów PHP niczego nie potwierdza):
 
