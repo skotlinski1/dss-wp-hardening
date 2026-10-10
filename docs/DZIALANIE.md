@@ -110,8 +110,9 @@ okno, ale go nie zamyka: nie zastępuje 2FA, aktualizacji ani wylogowania po pra
 
 Sprawdzone na WordPressie 7.1.3 przez prawdziwe logowanie na `wp-login.php` (czas sesji z `session_tokens`):
 przy 4 i 12 godzinach administrator, redaktor, autor i współpracownik dostają 4 h bez „Zapamiętaj mnie” i 12 h
-z nim, subskrybent i rola z samym uprawnieniem `read` 48 h i 336 h, tyle samo co bez wtyczki. Nie sprawdzono
-roli klienta WooCommerce (instalacja próbna nie ma WooCommerce) ani zamiany `.env` na stałe w DSS WP Manage.
+z nim, subskrybent i rola z samym uprawnieniem `read` 48 h i 336 h, tyle samo co bez wtyczki. Zamiana `.env` na
+stałe w DSS WP Manage 5.3.0 na PHP 8.5.11: `4` i `12` dają stałe typu `int`, a wartość `abc` zatrzymuje kompilację
+(`expected int`). Nie sprawdzono roli klienta WooCommerce (instalacja próbna nie ma WooCommerce).
 
 ## Czego wtyczka nie zasłania
 
