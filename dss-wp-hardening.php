@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DSS — Hardening
  * Description: Utwardzenie WordPressa: wyliczanie autorów, wersja WordPressa, XML-RPC. MU-plugin.
- * Version: 0.4.0
+ * Version: 0.5.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
@@ -10,11 +10,13 @@
  *
  * Zakres (SRP): informacje i wejścia, które pomagają atakującemu: wyliczanie autorów (/?author=N,
  * archiwa autorów, REST /wp/v2/users, author_name w oEmbed, wp-sitemap-users-*.xml, komunikaty
- * logowania i resetu hasła), wersja WordPressa (meta generator), XML-RPC i hasła aplikacji. Pytanie
+ * logowania i resetu hasła), wersja WordPressa (meta generator), XML-RPC, hasła aplikacji i czas sesji
+ * kont edytorskich. Pytanie
  * kontrolne: „dlaczego usuwamy?”. Bo pomaga atakującemu: tutaj. Bo zbędne albo ciężkie: dss-wp-cleanup.
  * Nagłówki bezpieczeństwa HTTP i limity logowań ustawia serwer, nie ta wtyczka.
  *
- * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API.
+ * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
+ * edytorskich, który działa tylko po ustawieniu stałych.
  */
 
 declare(strict_types=1);
@@ -42,6 +44,7 @@ function configure(): void
 	configure_login();
 	configure_version();
 	configure_app_passwords();
+	configure_sessions();
 }
 
 /**
@@ -266,4 +269,67 @@ function configure_version(): void
 function configure_app_passwords(): void
 {
 	add_filter('wp_is_application_passwords_available', '__return_false');
+}
+
+/**
+ * Czas sesji kont z uprawnieniem `edit_posts` (administrator, redaktor, autor, współpracownik): skradzione
+ * ciasteczko takiego konta działa tylko do końca sesji. Dwie stałe w godzinach (zwykle z `.env`):
+ * DSS_WP_HARDENING_ADMIN_SESSION_HOURS dla logowania bez „Zapamiętaj mnie” i
+ * DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS dla logowania z nim. Bez stałej (albo z wartością niedodatnią) dany
+ * czas zostaje taki, jak ustawia WordPress. Konta bez `edit_posts` (subskrybent, klient sklepu) nie są
+ * objęte.
+ */
+function configure_sessions(): void
+{
+	if (session_hours('DSS_WP_HARDENING_ADMIN_SESSION_HOURS') === 0
+		&& session_hours('DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS') === 0) {
+		return;
+	}
+
+	// Późny priorytet: skraca także wartość ustawioną przez inne filtry. Filtr działa tylko przy logowaniu.
+	add_filter('auth_cookie_expiration', __NAMESPACE__ . '\\shorten_session', 99, 3);
+}
+
+/**
+ * Skraca czas sesji konta z uprawnieniem `edit_posts`. Nigdy go nie wydłuża: stała większa od wartości
+ * ustawionej przez WordPress niczego nie zmienia.
+ *
+ * @param mixed $length   Czas sesji w sekundach.
+ * @param mixed $user_id  ID użytkownika.
+ * @param mixed $remember Czy zaznaczono „Zapamiętaj mnie”.
+ * @return mixed
+ */
+function shorten_session($length, $user_id = 0, $remember = false)
+{
+	if (!is_numeric($length)) {
+		return $length;
+	}
+	$hours = session_hours(
+		$remember ? 'DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS' : 'DSS_WP_HARDENING_ADMIN_SESSION_HOURS'
+	);
+	if ($hours === 0 || !user_can((int) $user_id, 'edit_posts')) {
+		return $length;
+	}
+
+	return min((int) $length, $hours * HOUR_IN_SECONDS);
+}
+
+/**
+ * Czyta stałą z liczbą godzin.
+ *
+ * @param string $constant Nazwa stałej.
+ * @return int Liczba godzin albo 0, gdy stałej nie ma lub nie jest dodatnią liczbą całkowitą.
+ */
+function session_hours(string $constant): int
+{
+	if (!defined($constant)) {
+		return 0;
+	}
+	$value = constant($constant);
+	if (!is_int($value) && !is_string($value)) {
+		return 0;
+	}
+	$hours = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+	return $hours === false ? 0 : $hours;
 }

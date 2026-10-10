@@ -5,6 +5,16 @@ Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), we
 `Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
 
+## 0.5.0 — 2026-10-10
+
+- Opcjonalny czas sesji kont edytorskich: stałe `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` (logowanie bez
+  „Zapamiętaj mnie”) i `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` (z nim), w godzinach, skracają sesję kont z
+  uprawnieniem `edit_posts` (administrator, redaktor, autor, współpracownik). Klienci sklepu zostają przy
+  czasie z WordPressa, a wartość dłuższa niż ta z WordPressa niczego nie zmienia. Bez stałych wtyczka niczego
+  nie zmienia.
+- W projekcie DSS WP Manage obie nazwy trzeba dopisać do `DSS_WP_MANAGE_ENV_TO_CONST` jako `INT`
+  (opis: `docs/INSTALACJA.md`).
+
 ## 0.4.0 — 2026-10-09
 
 - Hasła aplikacji wyłączone (`wp_is_application_passwords_available` = false): rdzeń nie przyjmuje logowania

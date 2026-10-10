@@ -3,7 +3,8 @@
 Zakres (SRP): informacje i wejścia, które pomagają atakującemu. Podział między wtyczki DSS: sekcja 5
 [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md#5-zakres-i-podział-między-wtyczki).
 
-Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wszystkie haki rejestruje
+Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
+edytorskich, który działa tylko po ustawieniu stałych (sekcja „Czas sesji”). Wszystkie haki rejestruje
 `configure()` na `plugins_loaded`. Nazwy filtrów i kody błędów sprawdzone w kodzie WordPressa 7.1.3.
 
 ## Haki aktywne
@@ -63,6 +64,42 @@ Cloudflare i 2FA). Strona z nich nie korzysta: żadna aplikacja ani usługa nie 
 Zalogowany w przeglądarce użytkownik korzysta z REST API dalej (ciasteczko i nonce). Sprawdzone na WordPressie
 7.1.3: zapytanie do `/wp-json/wp/v2/settings` z istniejącym hasłem aplikacji administratora daje 200 bez
 wtyczki i 401 `rest_forbidden` z wtyczką. Wcześniej utworzone hasła zostają w bazie, ale nie działają.
+
+### Czas sesji
+
+| Hak | Co robi |
+|---|---|
+| `auth_cookie_expiration` (filtr, priorytet 99, tylko gdy ustawiono stałą) | skraca czas sesji kont z uprawnieniem `edit_posts`: stała `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` dla logowania bez „Zapamiętaj mnie”, `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` dla logowania z nim |
+
+Stałe są w godzinach i pochodzą zwykle z `.env` ([INSTALACJA.md](INSTALACJA.md#czas-sesji-kont-edytorskich)).
+Reguły:
+
+- **Kogo dotyczy:** kont z uprawnieniem `edit_posts`: administrator, redaktor, autor i współpracownik. Konta
+  bez niego (subskrybent, klient sklepu) mają czas sesji z WordPressa, czyli 2 dni bez „Zapamiętaj mnie” i 14
+  dni z nim.
+- **Tylko skraca:** wartość dłuższa niż ta z WordPressa niczego nie zmienia. Stała, której nie ma, albo której
+  wartość nie jest dodatnią liczbą całkowitą (`0`, liczba ujemna, ułamek, tekst niebędący liczbą), jest
+  pomijana. Gdy żadna z
+  dwóch nie jest ustawiona, wtyczka nie rejestruje filtra.
+- **Czas liczy się od logowania**, nie od ostatniej aktywności: WordPress nie przedłuża sesji przy pracy.
+  Po jej końcu prosi o ponowne zalogowanie. Czas sesji jest zapisany w bazie przy logowaniu, więc trwająca
+  sesja zachowuje czas, z jakim powstała; nowa wartość działa od następnego logowania.
+- **Karencja rdzenia:** żądania zapisu (POST) i ajax są przyjmowane do godziny po końcu sesji. Wtyczka jej nie
+  zmienia, więc najdłuższy czas dla zapisów to czas sesji plus godzina.
+- **Ciasteczko w przeglądarce:** bez „Zapamiętaj mnie” jest sesyjne (znika po zamknięciu przeglądarki), z nim
+  trwałe. Trwałe ciasteczko przeglądarka trzyma o 12 godzin dłużej niż wynosi czas sesji (zapas rdzenia na
+  karencję), ale serwer odrzuca sesję po czasie sesji.
+- **Zmiana własnego hasła w profilu** zachowuje oba czasy. Rdzeń rozpoznaje wtedy „Zapamiętaj mnie” po tym, że
+  ciasteczko żyje dłużej niż czas sesji bez niego, więc `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` ma być
+  większe od `DSS_WP_HARDENING_ADMIN_SESSION_HOURS`.
+
+Skradzione ciasteczko działa do końca sesji albo do wylogowania, które usuwa token z bazy. Czas sesji skraca to
+okno, ale go nie zamyka: nie zastępuje 2FA, aktualizacji ani wylogowania po pracy.
+
+Sprawdzone na WordPressie 7.1.3 przez prawdziwe logowanie na `wp-login.php` (czas sesji z `session_tokens`):
+przy 4 i 12 godzinach administrator, redaktor, autor i współpracownik dostają 4 h bez „Zapamiętaj mnie” i 12 h
+z nim, subskrybent i rola z samym uprawnieniem `read` 48 h i 336 h, tyle samo co bez wtyczki. Nie sprawdzono
+roli klienta WooCommerce (instalacja próbna nie ma WooCommerce) ani zamiany `.env` na stałe w DSS WP Manage.
 
 ## Czego wtyczka nie zasłania
 
