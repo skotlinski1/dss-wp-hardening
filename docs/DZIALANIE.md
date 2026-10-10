@@ -4,24 +4,20 @@ Zakres (SRP): informacje i wejścia, które pomagają atakującemu. Podział mi�
 [`.github/CONTRIBUTING.md`](../.github/CONTRIBUTING.md#5-zakres-i-podział-między-wtyczki).
 
 Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
-edytorskich, który działa tylko po ustawieniu stałych (sekcja „Czas sesji”). Wszystkie haki rejestruje
+edytorskich, który działa tylko po ustawieniu stałych (dział „4. Czas sesji”). Wszystkie haki rejestruje
 `configure()` na `plugins_loaded`. Nazwy filtrów i kody błędów sprawdzone w kodzie WordPressa 7.1.3.
 
 ## Haki aktywne
 
-### XML-RPC
+Haki są pogrupowane w cztery działy, tak samo jak w pliku `dss-wp-hardening.php` (każdy dział ma tam nagłówek
+o tej samej nazwie, a `configure()` wywołuje je w tej kolejności).
 
-| Hak | Co robi |
-|---|---|
-| `plugins_loaded` (w `configure()`) | żądanie do `xmlrpc.php` (także `?rsd`) kończy się kodem 403 i tekstem „XML-RPC jest wyłączone.”, zanim rdzeń zbuduje serwer XML-RPC |
-| `wp_headers` (filtr) | bez nagłówka `X-Pingback`, który rdzeń wysyła na wpisach z otwartymi pingami |
+### 1. Ukrywanie loginów
 
-Z XML-RPC korzystają aplikacja mobilna WordPressa, Jetpack i pingbacki; strona żadnego z nich nie używa.
-`xmlrpc.php` przyjmuje próby logowania (także wiele naraz w `system.multicall`), więc to typowy cel ataków na
-hasła. Wtyczka zatrzymuje żądanie po załadowaniu WordPressa; blokada na serwerze (LiteSpeed) oszczędza też to
-ładowanie.
+Login (zwykle taki sam jak slug autora) to połowa danych do logowania. Ten dział zamyka wszystkie miejsca,
+które zdradzają go niezalogowanemu.
 
-### Wyliczanie autorów
+#### 1a. Autorzy
 
 | Hak | Co robi |
 |---|---|
@@ -35,7 +31,7 @@ hasła. Wtyczka zatrzymuje żądanie po załadowaniu WordPressa; blokada na serw
 Slug autora (`user_nicename`) jest zwykle taki sam jak login, więc każde z tych miejsc podaje atakującemu
 połowę danych do logowania.
 
-### Logowanie i reset hasła
+#### 1b. Komunikaty logowania i resetu hasła
 
 | Hak | Co robi |
 |---|---|
@@ -45,15 +41,21 @@ połowę danych do logowania.
 Puste pola dają dalej komunikaty rdzenia („The username field is empty.” itd.), bo niczego nie zdradzają.
 Reset hasła wywołany poza `wp-login.php` (np. z listy użytkowników w panelu) działa bez zmian.
 
-### Wersja WordPressa
+### 2. Wejścia omijające formularz logowania
+
+#### 2a. XML-RPC
 
 | Hak | Co robi |
 |---|---|
-| `the_generator` (filtr) | pusty tekst zamiast `<meta name="generator" content="WordPress X.Y.Z">` w `<head>` i `<generator>` w kanałach; obejmuje każde miejsce, w którym rdzeń wypisuje wersję przez `the_generator()` |
+| `plugins_loaded` (w `configure()`) | żądanie do `xmlrpc.php` (także `?rsd`) kończy się kodem 403 i tekstem „XML-RPC jest wyłączone.”, zanim rdzeń zbuduje serwer XML-RPC |
+| `wp_headers` (filtr) | bez nagłówka `X-Pingback`, który rdzeń wysyła na wpisach z otwartymi pingami |
 
-Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odświeżanie cache przeglądarki.
+Z XML-RPC korzystają aplikacja mobilna WordPressa, Jetpack i pingbacki; strona żadnego z nich nie używa.
+`xmlrpc.php` przyjmuje próby logowania (także wiele naraz w `system.multicall`), więc to typowy cel ataków na
+hasła. Wtyczka zatrzymuje żądanie po załadowaniu WordPressa; blokada na serwerze (LiteSpeed) oszczędza też to
+ładowanie.
 
-### Hasła aplikacji
+#### 2b. Hasła aplikacji
 
 | Hak | Co robi |
 |---|---|
@@ -65,7 +67,17 @@ Zalogowany w przeglądarce użytkownik korzysta z REST API dalej (ciasteczko i n
 7.1.3: zapytanie do `/wp-json/wp/v2/settings` z istniejącym hasłem aplikacji administratora daje 200 bez
 wtyczki i 401 `rest_forbidden` z wtyczką. Wcześniej utworzone hasła zostają w bazie, ale nie działają.
 
-### Czas sesji
+### 3. Informacje o systemie
+
+#### 3a. Wersja WordPressa
+
+| Hak | Co robi |
+|---|---|
+| `the_generator` (filtr) | pusty tekst zamiast `<meta name="generator" content="WordPress X.Y.Z">` w `<head>` i `<generator>` w kanałach; obejmuje każde miejsce, w którym rdzeń wypisuje wersję przez `the_generator()` |
+
+Wersja jest dalej w adresach zasobów rdzenia (`?ver=`), bo od niej zależy odświeżanie cache przeglądarki.
+
+### 4. Czas sesji
 
 | Hak | Co robi |
 |---|---|

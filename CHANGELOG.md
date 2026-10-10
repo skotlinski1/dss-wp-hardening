@@ -14,6 +14,9 @@ numeru: wspomina je najbliższe wydanie.
   nie zmienia.
 - W projekcie DSS WP Manage obie nazwy trzeba dopisać do `DSS_WP_MANAGE_ENV_TO_CONST` jako `INT`
   (opis: `docs/INSTALACJA.md`).
+- Plik `dss-wp-hardening.php` uporządkowany tematycznie w cztery działy z nagłówkami: ukrywanie loginów
+  (autorzy, komunikaty logowania), wejścia omijające formularz logowania (XML-RPC, hasła aplikacji), informacje
+  o systemie (wersja) i sesje. `docs/DZIALANIE.md` ma ten sam podział. Działanie bez zmian.
 
 ## 0.4.0 — 2026-10-09
 

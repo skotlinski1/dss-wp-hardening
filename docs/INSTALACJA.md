@@ -32,7 +32,7 @@ Usunięcie linii przywraca działanie. Ta sama stała służy do porównań z wt
 
 Opcjonalne i domyślnie wyłączone. Dwie stałe w godzinach skracają sesję kont z uprawnieniem `edit_posts`
 (administrator, redaktor, autor, współpracownik); klienci sklepu zostają przy czasie z WordPressa. Reguły:
-[DZIALANIE.md](DZIALANIE.md#czas-sesji).
+[DZIALANIE.md](DZIALANIE.md#4-czas-sesji).
 
 | Stała | Dla logowania | Przykład |
 |---|---|---|
