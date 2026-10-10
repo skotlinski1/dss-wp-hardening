@@ -30,28 +30,30 @@ Usunięcie linii przywraca działanie. Ta sama stała służy do porównań z wt
 
 ## Czas sesji kont edytorskich
 
-Opcjonalne i domyślnie wyłączone. Dwie stałe w godzinach skracają sesję kont z uprawnieniem `edit_posts`
-(administrator, redaktor, autor, współpracownik); klienci sklepu zostają przy czasie z WordPressa. Reguły:
-[DZIALANIE.md](DZIALANIE.md#4-czas-sesji).
+Działa bez żadnego wpisu: konta z uprawnieniem `edit_posts` (administrator, redaktor, autor, współpracownik)
+mają sesję **4 godziny**, a z „Zapamiętaj mnie” **12**. Klienci sklepu zostają przy czasie z WordPressa. Dwie
+stałe w godzinach zmieniają te wartości (reguły: [DZIALANIE.md](DZIALANIE.md#4-czas-sesji)):
 
-| Stała | Dla logowania | Przykład |
+| Stała | Dla logowania | Domyślnie |
 |---|---|---|
 | `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` | bez „Zapamiętaj mnie” | `4` |
 | `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` | z „Zapamiętaj mnie” (większa od poprzedniej) | `12` |
 
-W projekcie DSS WP Manage ustaw je w `.env` i dopisz do deklaracji `DSS_WP_MANAGE_ENV_TO_CONST` (jest tylko
-jedna na plik; kolejna linia zastąpiłaby poprzednią):
+`0` wyłącza skracanie (zostaje czas z WordPressa: 2 dni i 14 dni); ustaw wtedy `0` w obu stałych. Przykład
+dla lokalnego środowiska, w którym nie chcesz wylogowań co 4 godziny. W projekcie DSS WP Manage wpisz je w
+`.env` i dopisz do deklaracji `DSS_WP_MANAGE_ENV_TO_CONST` (jest tylko jedna na plik; kolejna linia
+zastąpiłaby poprzednią):
 
 ```
-DSS_WP_HARDENING_ADMIN_SESSION_HOURS=4
-DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS=12
+DSS_WP_HARDENING_ADMIN_SESSION_HOURS=0
+DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS=0
 DSS_WP_MANAGE_ENV_TO_CONST="
     DSS_WP_HARDENING_ADMIN_SESSION_HOURS:INT
     DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS:INT
 "
 ```
 
-Przy ręcznej instalacji: `define('DSS_WP_HARDENING_ADMIN_SESSION_HOURS', 4);` w `wp-config.php` przed
+Przy ręcznej instalacji: `define('DSS_WP_HARDENING_ADMIN_SESSION_HOURS', 0);` w `wp-config.php` przed
 `wp-settings.php`. Wyłącznik awaryjny wyłącza także tę funkcję.
 
 ## Sprawdzenie po wdrożeniu
@@ -64,8 +66,8 @@ Po wdrożeniu i po każdej większej aktualizacji WordPressa, w oknie prywatnym 
 3. W źródle strony głównej nie ma `name="generator"`.
 4. Logowanie z nieistniejącym loginem i z istniejącym loginem i złym hasłem pokazuje ten sam komunikat.
 5. Po zalogowaniu panel działa, a lista użytkowników się otwiera.
-6. Jeśli ustawiono czas sesji: po zalogowaniu na konto administratora `wp user meta get ID session_tokens`
-   pokazuje `expiration` o podaną liczbę godzin późniejsze niż `login`.
+6. Po zalogowaniu na konto administratora `wp user meta get ID session_tokens` pokazuje `expiration` późniejsze
+   niż `login` o 4 godziny (z „Zapamiętaj mnie” o 12), chyba że stałe ustawiają inny czas.
 7. Jeśli strona publikuje kanały RSS (nie wyłącza ich `dss-wp-cleanup`): w `https://twoja-domena.pl/feed/` pole
    `<dc:creator>` zawiera nazwę strony, nie autora.
 

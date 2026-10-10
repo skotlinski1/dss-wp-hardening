@@ -28,7 +28,7 @@ Zaznacz każdy punkt. Jeśli któregoś nie masz, zrób to najpierw.
 
 Composer widzi wersje tylko jako **tagi Git**, czyli nazwane etykiety na commicie. Bez tagu Composer nie znajdzie żadnej wersji.
 
-**Wersja, którą chcesz zainstalować, ma już tag?** Sprawdź na GitHubie: repo → **Tags**. Jeśli tak, ten krok jest zrobiony: przejdź do kroku 2. Wykonujesz go przy każdej nowej wersji (np. `0.6.0`).
+**Wersja, którą chcesz zainstalować, ma już tag?** Sprawdź na GitHubie: repo → **Tags**. Jeśli tak, ten krok jest zrobiony: przejdź do kroku 2. Wykonujesz go przy każdej nowej wersji (np. `0.7.0`).
 
 **Nie masz jeszcze repo wtyczki na komputerze?** Pobierz je (tylko raz):
 
@@ -131,12 +131,12 @@ Jeśli sekcje `installer-paths` i `dss-wp-manage` już istnieją, **nie twórz d
 ### 3c. Zainstaluj wtyczkę
 
 ```bash
-composer require dss/wp-hardening:^0.6
+composer require dss/wp-hardening:^0.7
 ```
 
-`dss/wp-hardening` to nazwa pakietu (pole `name` w `composer.json` wtyczki, nie nazwa repo na GitHubie). `^0.6` znaczy: dowolna wersja 0.6.x od 0.6.0 w górę (przy numerach 0.Y.Z każde nowe Y wymaga zmiany wymagania, zob. krok 6).
+`dss/wp-hardening` to nazwa pakietu (pole `name` w `composer.json` wtyczki, nie nazwa repo na GitHubie). `^0.7` znaczy: dowolna wersja 0.7.x od 0.7.0 w górę (przy numerach 0.Y.Z każde nowe Y wymaga zmiany wymagania, zob. krok 6).
 
-Po udanej instalacji w wyniku zobaczysz m.in. linię `Installing dss/wp-hardening (0.6.0)`, a potem etapy DSS kończące się informacją o sukcesie. Composer zmieni `composer.json` (doda wpis w `require`) i `composer.lock`.
+Po udanej instalacji w wyniku zobaczysz m.in. linię `Installing dss/wp-hardening (0.7.0)`, a potem etapy DSS kończące się informacją o sukcesie. Composer zmieni `composer.json` (doda wpis w `require`) i `composer.lock`.
 
 DSS po instalacji sam uruchamia swoje etapy, więc w projekcie musi być poprawny `.env`. Bez niego polecenie zakończy się błędem DSS (`Cannot read environment file`), a wtyczka i tak zostanie zainstalowana. Uzupełnij `.env` według dokumentacji `dss-wp-manage` i uruchom `composer dss-wp-manage`.
 
@@ -156,7 +156,7 @@ Katalog `public/app/mu/wp-hardening/` ma być w `.gitignore` projektu witryny (p
    ```bash
    composer show dss/wp-hardening
    ```
-   Ma pokazać `versions : * 0.6.0` oraz `path` kończący się na `public/app/mu/wp-hardening`.
+   Ma pokazać `versions : * 0.7.0` oraz `path` kończący się na `public/app/mu/wp-hardening`.
 2. Sprawdź wpis w loaderze:
    ```bash
    grep wp-hardening public/app/mu/dss-wp-manage-mu-loader.php
@@ -180,14 +180,14 @@ Uwaga: na liście **Wtyczki → Must-Use** zobaczysz tylko „DSS WP Manage MU p
 
 ## Krok 6. Nowa wersja wtyczki w przyszłości
 
-1. **Repo wtyczki:** wprowadź zmiany, podnieś `Version:` w `dss-wp-hardening.php` (np. na `0.6.1`), zrób commit i pull request, zmerguj do `main`.
+1. **Repo wtyczki:** wprowadź zmiany, podnieś `Version:` w `dss-wp-hardening.php` (np. na `0.7.1`), zrób commit i pull request, zmerguj do `main`.
 2. **Repo wtyczki:** utwórz tag jak w kroku 1.
 3. **Projekt witryny:**
    ```bash
    cd ~/Projects/example.com
    composer update dss/wp-hardening
    ```
-   Ograniczenie `^0.6` pozwala tylko na wersje 0.6.x. Na 0.7.0 (i każde kolejne Y, także 1.0.0) trzeba najpierw zmienić wymaganie w `composer.json` (np. na `^0.7`).
+   Ograniczenie `^0.7` pozwala tylko na wersje 0.7.x. Na 0.8.0 (i każde kolejne Y, także 1.0.0) trzeba najpierw zmienić wymaganie w `composer.json` (np. na `^0.8`).
 4. Sprawdź jak w kroku 4, zrób commit `composer.json` i `composer.lock` i wdróż jak w kroku 5.
 
 Nie używaj `"dev-main"` zamiast tagów na produkcji: Composer sklonuje wtedy całe repo i w `public/app/mu/wp-hardening/` pojawi się katalog `.git` z historią kodu.
@@ -208,7 +208,7 @@ Composer usunie katalog `public/app/mu/wp-hardening/`, wpis z `composer.json` i 
 |---|---|
 | `Root composer.json requires dss/wp-hardening, it could not be found in any version` | Brak repo w `repositories` (krok 3a), nazwa w `require` inna niż `dss/wp-hardening`, brak tagu (krok 1) albo brak dostępu do repo (zły lub wygasły token). |
 | `Could not authenticate against github.com` albo pytanie o hasło w terminalu | Brak `auth.json` (albo `COMPOSER_AUTH`) w katalogu projektu, najczęściej na serwerze, albo token wygasł lub nie obejmuje tego repo (krok 2). |
-| `found dss/wp-hardening[…] but it does not match the constraint` | W repo nie ma tagu pasującego do wymagania (np. wpisałeś `^0.7`, a są tylko 0.6.x). Zmień wymaganie albo utwórz tag. |
+| `found dss/wp-hardening[…] but it does not match the constraint` | W repo nie ma tagu pasującego do wymagania (np. wpisałeś `^0.8`, a są tylko 0.7.x). Zmień wymaganie albo utwórz tag. |
 | `must contain exactly one main PHP file with a Plugin Name header … found 2` (albo `found 0`) | W katalogu głównym wtyczki są dwa pliki z `Plugin Name:` albo żaden. Popraw repo wtyczki, wydaj nowy tag i zrób `composer update dss/wp-hardening`. |
 | Wtyczka leży w `wp-content/mu-plugins/wp-hardening`, a nie w `public/app/mu/` | Brak `installer-paths` albo nie pasuje do `mu-plugins-dir` (krok 3b). DSS podaje regułę do wklejenia. |
 | Wtyczka ładuje się dwa razy | Główny plik jest też w `autoload.files` pakietu. Tu go tam nie ma, więc nie dodawaj. |

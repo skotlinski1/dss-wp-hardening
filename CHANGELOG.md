@@ -5,6 +5,19 @@ Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), we
 `Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
 
+## 0.7.0 — 2026-10-10
+
+- Czas sesji kont edytorskich (administrator, redaktor, autor, współpracownik) jest domyślnie skrócony: 4
+  godziny, a z „Zapamiętaj mnie” 12 (WordPress daje 2 dni i 14 dni). Stałe
+  `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` i `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` zmieniają te wartości, a `0`
+  w obu przywraca czas WordPressa. Błędna wartość stałej oznacza wartość domyślną. Klienci sklepu bez zmian.
+
+### Aktualizacja
+
+- W `composer.json` strony: `"dss/wp-hardening": "^0.7"`.
+- Konta edytorskie są wylogowywane po 4 godzinach od logowania (po 12 z „Zapamiętaj mnie”). Na Macu, jeśli to
+  przeszkadza, wpisz w `.env` `0` w obu stałych (i dopisz ich nazwy do `DSS_WP_MANAGE_ENV_TO_CONST` jako `INT`).
+
 ## 0.6.0 — 2026-10-10
 
 - Kanały RSS 2.0, RDF i Atom podają nazwę strony zamiast nazwy wyświetlanej autora (`<dc:creator>`,
