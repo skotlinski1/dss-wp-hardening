@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: DSS — Hardening
- * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, wersja, czas sesji. MU-plugin.
- * Version: 0.7.0
+ * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, pingi, wersja, czas sesji. MU-plugin.
+ * Version: 0.8.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
@@ -15,7 +15,7 @@
  * Układ pliku (każdy dział ma w nim własny nagłówek, a configure() wywołuje go w tej samej kolejności):
  *   1. Ukrywanie loginów: autorzy (/?author=N, archiwa, REST /wp/v2/users, oEmbed, wp-sitemap-users-*.xml,
  *      klasy komentarzy, nazwa autora w kanałach RSS) oraz komunikaty logowania i resetu hasła.
- *   2. Wejścia omijające formularz logowania: XML-RPC i hasła aplikacji.
+ *   2. Wejścia poza formularzem logowania: XML-RPC, hasła aplikacji, pingi i trackbacki.
  *   3. Informacje o systemie: wersja WordPressa (meta generator).
  *   4. Sesje: czas sesji kont edytorskich.
  *
@@ -47,9 +47,10 @@ function configure(): void
 	configure_authors();
 	configure_login();
 
-	// 2. Wejścia omijające formularz logowania.
+	// 2. Wejścia poza formularzem logowania.
 	configure_xmlrpc();
 	configure_app_passwords();
+	configure_pings();
 
 	// 3. Informacje o systemie.
 	configure_version();
@@ -267,9 +268,9 @@ function hide_unknown_account($errors, $user_data): void
 }
 
 // ==================================================================================================
-// 2. WEJŚCIA OMIJAJĄCE FORMULARZ LOGOWANIA
-// XML-RPC przyjmuje próby logowania (także wiele naraz), a hasło aplikacji to stałe dane logowania bez
-// formularza, wyzwania Cloudflare i 2FA.
+// 2. WEJŚCIA POZA FORMULARZEM LOGOWANIA
+// XML-RPC przyjmuje próby logowania (także wiele naraz), hasło aplikacji to stałe dane logowania bez
+// formularza, wyzwania Cloudflare i 2FA, a trackbacki przyjmuje od każdego gościa wp-trackback.php.
 // ==================================================================================================
 
 // ---- 2a. XML-RPC ---------------------------------------------------------------------------------
@@ -316,6 +317,19 @@ function remove_pingback_header($headers)
 function configure_app_passwords(): void
 {
 	add_filter('wp_is_application_passwords_available', '__return_false');
+}
+
+// ---- 2c. Pingi i trackbacki ----------------------------------------------------------------------
+
+/**
+ * Pingi i trackbacki: strona ich nie używa, a `wp-trackback.php` przyjmuje od każdego gościa trackbacki jako
+ * komentarze, i rdzeń przy publikacji wysyła pingi na zewnątrz. Rdzeń od WordPressa 7.1 sam wyłącza je poza
+ * produkcją: wychodzące pingi, przyjmowanie trackbacków i metodę XML-RPC `pingback.ping`. Ten filtr
+ * rozciąga to na produkcję (na starszym WordPressie filtr nie istnieje i niczego nie robi).
+ */
+function configure_pings(): void
+{
+	add_filter('wp_should_disable_pings_for_environment', '__return_true');
 }
 
 // ==================================================================================================

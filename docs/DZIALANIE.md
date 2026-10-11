@@ -47,7 +47,10 @@ w PHP 8.3 na WordPressie 7.1.3, 200 000 powtórzeń; strona główna odpowiadał
 Puste pola dają dalej komunikaty rdzenia („The username field is empty.” itd.), bo niczego nie zdradzają.
 Reset hasła wywołany poza `wp-login.php` (np. z listy użytkowników w panelu) działa bez zmian.
 
-### 2. Wejścia omijające formularz logowania
+### 2. Wejścia poza formularzem logowania
+
+XML-RPC i hasła aplikacji omijają formularz logowania, a trackbacki przyjmuje od każdego gościa osobny plik
+rdzenia.
 
 #### 2a. XML-RPC
 
@@ -72,6 +75,27 @@ Cloudflare i 2FA). Strona z nich nie korzysta: żadna aplikacja ani usługa nie 
 Zalogowany w przeglądarce użytkownik korzysta z REST API dalej (ciasteczko i nonce). Sprawdzone na WordPressie
 7.1.3: zapytanie do `/wp-json/wp/v2/settings` z istniejącym hasłem aplikacji administratora daje 200 bez
 wtyczki i 401 `rest_forbidden` z wtyczką. Wcześniej utworzone hasła zostają w bazie, ale nie działają.
+
+#### 2c. Pingi i trackbacki
+
+| Hak | Co robi |
+|---|---|
+| `wp_should_disable_pings_for_environment` (filtr) | `true`: rdzeń uznaje pingi za wyłączone także na produkcji. `wp-trackback.php` odpowiada błędem i niczego nie zapisuje, przy publikacji nie wychodzą pingi (`do_all_pingbacks`, `do_all_trackbacks` i `generic_ping`, czyli „Usługi aktualizacji” z ustawień pisania), a metoda XML-RPC `pingback.ping` nie jest zarejestrowana |
+
+Trackback to komentarz, który dowolny gość dodaje jednym żądaniem POST do `wp-trackback.php`, bez logowania.
+Strona z nich nie korzysta. Rdzeń WordPressa 7.1 sam wyłącza ten mechanizm, gdy `WP_ENVIRONMENT_TYPE` jest inny
+niż `production` (`wp-includes/comment.php`, `default-filters.php`), a filtr rozciąga to na produkcję. Odpowiedź
+`wp-trackback.php` to komunikat rdzenia „Trackbacks are disabled in non-production environments.” także na
+produkcji. Na WordPressie starszym niż 7.1 filtr niczego nie robi. `do_all_enclosures` (załączniki
+multimedialne w treści) zostaje. Komentarze nie są pingami: filtr nie obejmuje `comments_open()`. Nie sprawdzono
+recenzji produktów WooCommerce (instalacja próbna nie ma WooCommerce).
+
+Sprawdzone na WordPressie 7.1.3 z `WP_ENVIRONMENT_TYPE` równym `production`: POST na
+`/core/wp-trackback.php/1` (adres z ID wpisu) bez wtyczki dał `<error>0</error>` i nowy komentarz typu
+`trackback` oczekujący na moderację, a z wtyczką `<error>1</error>` z komunikatem powyżej i bez nowego
+komentarza. Po `wp_maybe_disable_outgoing_pings_for_environment()` akcja `do_all_pings` nie ma już
+`do_all_pingbacks`, `do_all_trackbacks` i `generic_ping` (bez wtyczki ma je wszystkie), a `xmlrpc_methods` nie
+zawiera `pingback.ping`. Pingów na zewnątrz nie wysyłano.
 
 ### 3. Informacje o systemie
 
