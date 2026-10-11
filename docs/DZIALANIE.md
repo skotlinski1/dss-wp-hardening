@@ -9,7 +9,7 @@ edytorskich (domyślnie 4 godziny, a z „Zapamiętaj mnie” 12; dział „4. C
 
 ## Haki aktywne
 
-Haki są pogrupowane w cztery działy, tak samo jak w pliku `dss-wp-hardening.php` (każdy dział ma tam nagłówek
+Haki są pogrupowane w pięć działów, tak samo jak w pliku `dss-wp-hardening.php` (każdy dział ma tam nagłówek
 o tej samej nazwie, a `configure()` wywołuje je w tej kolejności).
 
 ### 1. Ukrywanie loginów
@@ -148,6 +148,50 @@ Zamiana `.env` na stałe w DSS WP Manage 5.3.0 na PHP 8.5.11: `4` i `12` dają s
 zatrzymuje kompilację (`expected int`). Nie sprawdzono roli klienta WooCommerce (instalacja próbna nie ma
 WooCommerce).
 
+### 5. Patchstack
+
+Wtyczka Patchstack (alerty o lukach we wtyczkach; ustawienia dla strony opisuje repo `dss-wp-site`,
+`docs/BEZPIECZENSTWO.md`) ma tu zostać przy sprawdzaniu oprogramowania. Dział działa tylko wtedy, gdy wtyczka jest
+wczytana (istnieje funkcja `patchstack()`); bez niej niczego nie rejestruje.
+
+| Hak | Co robi |
+|---|---|
+| usunięcie pola POST `patchstack_secret` na `plugins_loaded` (przed `init` wtyczki Patchstack) | wtyczka nie widzi poleceń zdalnych: nie sprawdza podpisu i niczego nie wykonuje |
+| `pre_option_patchstack_activity_log_is_enabled` (filtr) | opcja dziennika aktywności zawsze `0`, niezależnie od wartości w bazie |
+
+- **Polecenia zdalne.** Usługa Patchstack wysyła je na dowolny adres strony w polu POST `patchstack_secret`,
+  podpisanym kluczem konta, a wtyczka wykonuje je bez zalogowanego użytkownika: wylistowanie kont
+  administracyjnych (login, e-mail), odczyt opcji wtyczki i `$_SERVER`, aktualizację rdzenia, motywów i wtyczek,
+  usuwanie wtyczek. Stała `DISALLOW_FILE_MODS` ich nie zatrzymuje, bo działa na poziomie uprawnień użytkownika w
+  panelu, a tu nikt się nie loguje. Po usunięciu pola żądanie jest dla wtyczki zwykłym POST-em: strona odpowiada
+  tym, co zwykle, także na uszkodzone dane (wtyczka bez osłony kończy je błędem 500).
+- **Co zostaje.** Alerty o lukach: lista wtyczek i motywów oraz wersje WordPressa, PHP i bazy wysyła się z crona
+  co 12 godzin i po zmianach wtyczek (hak `patchstack_send_software_data`). Łączenie z kontem: pola
+  `patchstack_ott_action` i `patchstack_ra_action` (łączenie z aplikacji) oraz polecenia `wp patchstack`. Aplikacja
+  Patchstack nie wykona na stronie niczego na żądanie: aktualizacji, usunięcia wtyczki, odświeżenia reguł ani listy
+  wtyczek poza harmonogramem.
+- **Dziennik aktywności** (płatna wersja Patchstacka): zapisuje i co 15 minut wysyła do usługi login, ID i adres
+  IP każdego konta, także klientów sklepu. Filtr wymusza wyłączenie nawet wtedy, gdy ustawienia konta w aplikacji
+  Patchstack zmienią opcję w bazie.
+- **Czego ten dział nie ogranicza:** listy wtyczek z katalogu wtyczek i wszystkich motywów (nazwa, wersja,
+  katalog) oraz wersji WordPressa, PHP i bazy, które Patchstack dostaje do alertów (MU-pluginów nie dostaje);
+  w płatnej wersji dziennika zapory (adres IP, adres żądania, treść żądań, które trafiły w regułę).
+
+Sprawdzone na WordPressie 7.1.3 z Patchstack 2.3.7 połączonym z atrapą API (bez prawdziwego konta), żądaniami HTTP
+do wbudowanego serwera PHP 8.3, z wtyczką i z wyłącznikiem awaryjnym. Podpisane polecenia „lista użytkowników”,
+„odczyt opcji” i „informacje o serwerze” zwracają bez wtyczki JSON (login i e-mail administratora, opcje
+Patchstacka, `$_SERVER`), a z wtyczką zwykłą stronę HTML; „usuń wtyczkę” z wtyczką niczego nie usuwa, a bez niej
+usuwa wtyczkę mimo `DISALLOW_FILE_MODS=true`. Anonimowe żądanie z `hmac` jako tablicą daje bez wtyczki 500
+(błąd krytyczny w `hash_equals()`), z wtyczką 200 i nic w logu PHP. Łączenie z aplikacji (`patchstack_ra_action`)
+działa z wtyczką, tak samo `wp patchstack deactivate`, `activate` i `status`, a wysyłka listy oprogramowania do
+`/api/sw/json` też. Dziennik aktywności: bez wtyczki konto
+klienta zarejestrowane i zalogowane daje 2 wiersze, z wtyczką 0 przy wartości 1 w bazie. Przy nieaktywnym
+Patchstacku wtyczka niczego nie rejestruje i pola `patchstack_secret` nie rusza. Panel (kokpit, wtyczki, profil,
+ustawienia Patchstacka) odpowiada 200 z wtyczką i bez niej, z tymi samymi komunikatami PHP (jedno ostrzeżenie
+rdzenia o przeglądarce przy zablokowanej sieci). Nie sprawdzono: prawdziwego konta Patchstack (czy aplikacja
+działa bez poleceń zdalnych), płatnej zapory na prawdziwych regułach, działania na PHP 8.5 (składnia przechodzi
+`php -l`).
+
 ## Czego wtyczka nie zasłania
 
 - **Nazwa wyświetlana autora** (`display_name`) tam, gdzie wypisuje ją motyw (podpis wpisu), i autor komentarza
@@ -162,7 +206,7 @@ WooCommerce).
 |---|---|
 | nagłówki bezpieczeństwa HTTP, blokada plików i PHP w katalogu uploadu | `.htaccess` na serwerze |
 | HTTPS, HSTS, reguły WAF, limit prób logowania | Cloudflare |
-| wirtualne łatki na luki we wtyczkach | Patchstack |
+| wirtualne łatki na luki we wtyczkach | Patchstack (płatna wersja) |
 | zbędne zasoby i linki w `<head>` (emoji, RSD, RSS) | `dss-wp-cleanup` |
 | dane SEO | `dss-wp-seo` |
 
