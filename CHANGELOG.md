@@ -5,6 +5,21 @@ Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), we
 `Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
 
+## 0.9.0 — 2026-10-11
+
+- Patchstack ograniczony do alertów o lukach (nowy dział 5). Gdy jego wtyczka jest wczytana, wtyczka usuwa z
+  żądania pole `patchstack_secret`, którym usługa wysyła polecenia zdalne (lista kont administracyjnych, odczyt
+  opcji i `$_SERVER`, aktualizacja i usuwanie wtyczek, rdzenia i motywów; wykonują się bez zalogowanego
+  użytkownika, więc `DISALLOW_FILE_MODS` ich nie zatrzymuje) i wymusza wyłączony dziennik aktywności Patchstacka
+  (płatna wersja: login, ID i adres IP każdego konta, także klientów sklepu). Lista wtyczek i motywów do alertów
+  wysyła się dalej, łączenie z kontem działa. Bez Patchstacka niczego nie rejestruje.
+
+### Aktualizacja
+
+- Wymaganie `~0.7` w `composer.json` strony obejmuje tę wersję: wystarczy `composer update dss/wp-hardening`.
+- Aplikacja Patchstack nie wykona już na stronie niczego na żądanie (aktualizacji, usunięcia wtyczki, odświeżenia
+  reguł). Wtyczki aktualizujesz Composerem i WP-CLI jak zwykle.
+
 ## 0.8.0 — 2026-10-11
 
 - Pingi i trackbacki wyłączone także na produkcji (filtr `wp_should_disable_pings_for_environment` z

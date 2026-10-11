@@ -28,6 +28,9 @@ limity prób logowania i reguły WAF ustawiają serwer i Cloudflare (opis dla st
    „Zapamiętaj mnie” 12; klienci sklepu zostają przy czasie z WordPressa. Stałe
    `DSS_WP_HARDENING_ADMIN_SESSION_HOURS` i `DSS_WP_HARDENING_ADMIN_REMEMBER_HOURS` zmieniają te wartości, a `0`
    je wyłącza ([docs/INSTALACJA.md](docs/INSTALACJA.md#czas-sesji-kont-edytorskich)).
+5. **Patchstack** (tylko gdy jego wtyczka jest wczytana): zostaje przy alertach o lukach. Nie wykonuje poleceń
+   zdalnych z aplikacji (aktualizacja i usuwanie wtyczek, lista kont administracyjnych, odczyt opcji) i nie
+   zapisuje zdarzeń kont, w tym klientów sklepu, w dzienniku aktywności.
 
 Zalogowani mają dalej panel i REST API. Każdy hak z powodem i to, czego wtyczka nie zasłania:
 [docs/DZIALANIE.md](docs/DZIALANIE.md).

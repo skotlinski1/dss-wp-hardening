@@ -73,6 +73,16 @@ Po wdrożeniu i po każdej większej aktualizacji WordPressa, w oknie prywatnym 
 8. Trackbacki są zamknięte: `curl -s -X POST -d 'url=https://example.org/&title=t' https://twoja-domena.pl/wp-trackback.php/ID`
    (ID dowolnego wpisu; w układzie DSS adres to `/core/wp-trackback.php/ID`) zwraca `<error>1</error>` i
    komunikat „Trackbacks are disabled in non-production environments.”, a na liście komentarzy nic nie przybywa.
+9. Jeśli strona ma wtyczkę Patchstack połączoną z kontem: anonimowe żądanie z uszkodzonym podpisem zwraca 200, a
+   nie 500 (bez osłony kończy się błędem krytycznym wtyczki):
+
+   ```bash
+   T=$(( $(date +%s) / 30 ))
+   P=$(printf '{"nonce":"a","time":%s,"data":"{}","hmac":["x"]}' "$T" | base64 -w0)
+   curl -s -o /dev/null -w '%{http_code}\n' -X POST --data-urlencode "patchstack_secret=$P" https://twoja-domena.pl/
+   ```
+
+   Ma wyjść kod inny niż 500 (w próbie 200). Polecenie `base64 -w0` jest z GNU; na macOS użyj `base64 | tr -d '\n'`.
 
 Filtry są na miejscu (brak błędów PHP niczego nie potwierdza):
 
@@ -80,4 +90,10 @@ Filtry są na miejscu (brak błędów PHP niczego nie potwierdza):
 wp eval 'var_dump(has_filter("request", "DSS\Hardening\block_author_query"), has_filter("the_generator", "__return_empty_string"), has_filter("wp_should_disable_pings_for_environment", "__return_true"));'
 ```
 
-Wszystkie trzy wartości mają być `10`.
+Wszystkie trzy wartości mają być `10`. Gdy Patchstack jest wczytany, filtr dziennika aktywności też:
+
+```bash
+wp eval 'var_dump(has_filter("pre_option_patchstack_activity_log_is_enabled", "__return_zero"));'
+```
+
+Wartość ma być `10`.

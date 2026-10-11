@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: DSS — Hardening
- * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, pingi, wersja, czas sesji. MU-plugin.
- * Version: 0.8.0
+ * Description: Utwardzenie WordPressa: loginy, XML-RPC, hasła aplikacji, pingi, wersja, sesje, Patchstack. MU-plugin.
+ * Version: 0.9.0
  * License: GPL-2.0-or-later
  *
  * Własny MU-plugin: zakłada aktualne stabilne WordPress (7.0+) oraz PHP 8.3+.
@@ -18,6 +18,7 @@
  *   2. Wejścia poza formularzem logowania: XML-RPC, hasła aplikacji, pingi i trackbacki.
  *   3. Informacje o systemie: wersja WordPressa (meta generator).
  *   4. Sesje: czas sesji kont edytorskich.
+ *   5. Patchstack: tylko alerty o lukach (bez poleceń zdalnych i bez dziennika aktywności).
  *
  * Zasada: nic tu nie odcina zalogowanych użytkowników od panelu ani od REST API. Wyjątek to czas sesji kont
  * edytorskich (domyślnie 4 godziny, a z „Zapamiętaj mnie” 12; stałe go zmieniają, a 0 wyłącza).
@@ -57,6 +58,9 @@ function configure(): void
 
 	// 4. Sesje.
 	configure_sessions();
+
+	// 5. Patchstack.
+	configure_patchstack();
 }
 
 // ==================================================================================================
@@ -424,4 +428,35 @@ function session_hours(string $constant, int $default): int
 	$hours = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
 
 	return $hours === false ? $default : $hours;
+}
+
+// ==================================================================================================
+// 5. PATCHSTACK
+// Wtyczka Patchstack służy tu tylko do alertów o lukach: wysyła do usługi listę wtyczek i motywów oraz wersje
+// WordPressa, PHP i bazy. Nie przyjmuje poleceń z zewnątrz i nie zapisuje zdarzeń kont.
+// ==================================================================================================
+
+/**
+ * Ogranicza Patchstack do sprawdzania oprogramowania. Nic nie robi, gdy wtyczka nie jest wczytana.
+ *
+ * Polecenia zdalne: usługa wysyła je w polu POST `patchstack_secret`, podpisane kluczem konta, a wtyczka
+ * wykonuje je bez zalogowanego użytkownika. Potrafią wylistować konta administracyjne (login, e-mail), odczytać
+ * opcje wtyczki i `$_SERVER`, zaktualizować rdzeń, motywy i wtyczki oraz usunąć wtyczki, więc DISALLOW_FILE_MODS
+ * ich nie zatrzymuje. Pole znika z żądania przed startem wtyczki (jej `init` jest na `plugins_loaded` po tej
+ * funkcji), więc wtyczka go nie widzi: nie sprawdza podpisu i nie wykonuje poleceń. Alerty o lukach idą dalej,
+ * bo lista oprogramowania wysyła się z crona i po zmianach wtyczek. Pola łączenia konta (`patchstack_ott_action`,
+ * `patchstack_ra_action`) zostają, żeby dało się połączyć stronę z kontem.
+ *
+ * Dziennik aktywności (płatna wersja): zapisuje i co 15 minut wysyła do usługi login, ID i adres IP każdego
+ * konta, także klientów sklepu. Filtr wymusza wyłączenie niezależnie od wartości w bazie, którą może zmienić
+ * polityka z aplikacji Patchstack.
+ */
+function configure_patchstack(): void
+{
+	if (!function_exists('patchstack')) {
+		return;
+	}
+
+	unset($_POST['patchstack_secret']);
+	add_filter('pre_option_patchstack_activity_log_is_enabled', '__return_zero');
 }
