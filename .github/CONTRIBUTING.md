@@ -32,9 +32,10 @@ Zwiększając X zerujesz Y i Z, zwiększając Y zerujesz Z (np. z 1.4.7: X daje 
 
 Wersje `0.Y.Z` na czas przed pierwszym wdrożeniem: żadna strona nie działa jeszcze na tej wtyczce, więc zmiana
 z wierszy X albo Y wchodzi jako **Y** (z sekcją „Aktualizacja” w `CHANGELOG.md`, gdy strona musi coś zrobić),
-a reszta jako **Z**. Bez migracji i bez pytania o X. Wymaganie `^0.Y` w `composer.json` strony obejmuje tylko
-jedno Y, więc nowe Y wymaga zmiany wymagania w repo `dss-wp-site`. Wersję `1.0.0` wydajesz, gdy pierwsza
-strona ma zacząć działać na tej wtyczce; wtedy usuń ten akapit.
+a reszta jako **Z**. Bez migracji i bez pytania o X. Strona (`dss-wp-site`) ma wymaganie `~0.Y` (od 0.Y do
+przed 1.0), więc każda nowa wersja `0.Y` trafia do niej przez `composer update` bez zmiany `composer.json`.
+Wersję `1.0.0` wydajesz, gdy pierwsza strona ma zacząć działać na tej wtyczce; wtedy zmień wymaganie strony
+na `^1.0` i usuń ten akapit.
 
 ## 2. Jak wygląda zmiana
 
