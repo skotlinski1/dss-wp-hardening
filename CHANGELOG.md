@@ -5,6 +5,18 @@ Format wzorowany na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), we
 `Version:` w `dss-wp-hardening.php`. Zmiany tylko w plikach spoza paczki (dokumentacja, `.github/`) nie dostają
 numeru: wspomina je najbliższe wydanie.
 
+## 0.8.0 — 2026-10-11
+
+- Pingi i trackbacki wyłączone także na produkcji (filtr `wp_should_disable_pings_for_environment` z
+  WordPressa 7.1, którego rdzeń używa poza produkcją): `wp-trackback.php` odrzuca trackbacki, przy publikacji
+  nie wychodzą pingi (także „Usługi aktualizacji”), a metoda XML-RPC `pingback.ping` nie jest zarejestrowana.
+  Komentarze nie są pingami i działają bez zmian.
+- Dział 2 pliku i dokumentacji nazywa się „Wejścia poza formularzem logowania” i obejmuje też pingi.
+
+### Aktualizacja
+
+- Wymaganie `~0.7` w `composer.json` strony obejmuje tę wersję: wystarczy `composer update dss/wp-hardening`.
+
 ## 0.7.0 — 2026-10-10
 
 - Czas sesji kont edytorskich (administrator, redaktor, autor, współpracownik) jest domyślnie skrócony: 4

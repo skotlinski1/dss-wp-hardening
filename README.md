@@ -18,9 +18,11 @@ limity prób logowania i reguły WAF ustawiają serwer i Cloudflare (opis dla st
      linki do archiwów prowadzą na stronę główną, nie ma tras REST `/wp/v2/users` ani mapy
      `wp-sitemap-users-*.xml`, oEmbed, klasy komentarzy i kanały RSS nie podają autora;
    - logowanie i reset hasła nie zdradzają, czy konto istnieje.
-2. **Wejścia omijające formularz logowania:**
+2. **Wejścia poza formularzem logowania:**
    - `xmlrpc.php` odpowiada 403, bez nagłówka `X-Pingback`;
-   - bez haseł aplikacji (logowanie aplikacji do REST API i XML-RPC z pominięciem formularza logowania).
+   - bez haseł aplikacji (logowanie aplikacji do REST API i XML-RPC z pominięciem formularza logowania);
+   - bez pingów i trackbacków także na produkcji: `wp-trackback.php` niczego nie przyjmuje, przy publikacji
+     nie wychodzą pingi.
 3. **Informacje o systemie:** bez wersji WordPressa w meta `generator` i w kanałach.
 4. **Sesje:** konta edytorskie (administrator, redaktor, autor, współpracownik) mają sesję 4 godziny, a z
    „Zapamiętaj mnie” 12; klienci sklepu zostają przy czasie z WordPressa. Stałe

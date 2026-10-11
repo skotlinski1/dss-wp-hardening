@@ -70,11 +70,14 @@ Po wdrożeniu i po każdej większej aktualizacji WordPressa, w oknie prywatnym 
    niż `login` o 4 godziny (z „Zapamiętaj mnie” o 12), chyba że stałe ustawiają inny czas.
 7. Jeśli strona publikuje kanały RSS (nie wyłącza ich `dss-wp-cleanup`): w `https://twoja-domena.pl/feed/` pole
    `<dc:creator>` zawiera nazwę strony, nie autora.
+8. Trackbacki są zamknięte: `curl -s -X POST -d 'url=https://example.org/&title=t' https://twoja-domena.pl/wp-trackback.php/ID`
+   (ID dowolnego wpisu; w układzie DSS adres to `/core/wp-trackback.php/ID`) zwraca `<error>1</error>` i
+   komunikat „Trackbacks are disabled in non-production environments.”, a na liście komentarzy nic nie przybywa.
 
 Filtry są na miejscu (brak błędów PHP niczego nie potwierdza):
 
 ```bash
-wp eval 'var_dump(has_filter("request", "DSS\Hardening\block_author_query"), has_filter("the_generator", "__return_empty_string"));'
+wp eval 'var_dump(has_filter("request", "DSS\Hardening\block_author_query"), has_filter("the_generator", "__return_empty_string"), has_filter("wp_should_disable_pings_for_environment", "__return_true"));'
 ```
 
-Obie wartości mają być `10`.
+Wszystkie trzy wartości mają być `10`.
